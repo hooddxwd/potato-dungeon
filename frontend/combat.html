@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🥔 土豆地城 - 文字战斗版</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+    body { 
+      background: linear-gradient(135deg, #0f0e27 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container { 
+      max-width: 900px; 
+      width: 100%; 
+      padding: 20px;
+    }
+    .header { text-align: center; padding: 40px 0; }
+    .header h1 { 
+      font-size: 2.5em; 
+      margin-bottom: 10px; 
+      background: linear-gradient(45deg, #f39c12, #e74c3c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: #f39c12;
+      color: #fff;
+    }
+    .game-container { 
+      display: grid; 
+      gap: 20px; 
+      grid-template-columns: 2fr 1fr;
+    }
+    .main-panel { 
+      background: rgba(255,255,255,255,0.05); 
+      border-radius: 16px; 
+      padding: 20px; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .combat-panel {
+      background: rgba(0,0,0,0.8); 
+      border-radius: 12px; 
+      padding: 20px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-panel {
+      background: rgba(0,0,0,0.05); 
+      border-radius: 12px; 
+      padding: 15px;
+      display: grid; 
+      gap: 10px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .log-panel {
+      background: rgba(0,0,0,0.9); 
+      border-radius: 12px; 
+      border: 1px solid #333;
+      padding: 15px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .monster-info {
+      color: #e74c3c;
+      margin-bottom: 10px;
+    }
+    .monster-stats {
+      color: #95a5a6;
+      font-size: 0.85em;
+    }
+    .hp-bar {
+      width: 100%;
+      height: 20px;
+      background: #2d2d2a;
+      border-radius: 10px;
+      overflow: hidden;
+      transition: width 0.3s;
+    }
+    .hp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+      border-radius: 10px;
+      transition: width 0.3s;
+    }
+    .player-actions {
+      margin-top: 15px;
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    button { 
+      padding: 12px 25px; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+    button:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    button.btn-attack { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+    button.btn-attack:hover { background: linear-gradient(45deg, #c0392b, #a6732e); }
+    button.btn-attack:active { background: linear-gradient(45deg, #c0392b); transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    button.btn-skill { background: linear-gradient(45deg, #8e44ad, #3498db); color: #fff; }
+    button.btn-skill:hover { background: linear-gradient(45deg, #8e44ad, #2980b9); color: #fff; }
+    button.btn-skill:active { background: linear-gradient(45deg, #8e44ad, #3498db); transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    button.btn-flee { background: linear-gradient(45deg, #795548, #27ae601); color: #fff; }
+    button.btn-flee:hover { background: linear-gradient(45deg, #795548, #27ae601); color: #fff; }
+    button.btn-flee:active { background: linear-gradient(45deg, #795548, #27ae601); color: #fff; transform: translateY(0); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .status-effect {
+      margin-top: 10px;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      color: #e74c3c;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .rarity-common { color: #95a5a6; }
+    .rarity-uncommon { color: #2ecc71; }
+    .rarity-rare { color: #3498db; }
+    .rarity-epic { color: #9b59b6; }
+    .rarity-legendary { color: #f1c40f; }
+    .hidden { display: none; }
+    .show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🥔 土豆地城</h1>
+      <p>文字冒险战斗版</p>
+    </div>
+    
+    <div id="game-container">
+      <div class="main-panel">
+        <h2>🏰 探索中...</h2>
+      <p style="color: #888;">选择一个地城开始冒险</p>
+        
+        <div id="dungeon-select">
+          <button onclick="selectDungeon(1)">🏰 1. 土豆洞穴</button>
+          <button onclick="selectDungeon(2)">🏕️ 2. 哥布林营地</button>
+          <button onclick="selectDungeon(3)">💀 3. 地下墓穴</button>
+          <button onclick="selectDungeon(5)">⚙️ 4. 兽人要塞</button>
+          <button onclick="selectDungeon(7)">🐉 6. 构造体工坊</button>
+          <button onclick="selectDungeon(8)">🔥 7. 恶魔领域</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="combat-panel" class="hidden">
+      <div class="monster-info">
+        <h3>你遭遇【史莱姆】<h3>
+        <div class="monster-stats">
+          <div>HP: <span id="monster-hp">8</span> | AC: <span id="monster-ac">6</span> | ATK: <span id="monster-atk">3</span></div>
+        <div id="monster-effects">...</div>
+      </div>
+      
+      <div class="hp-bar">
+        <div class="hp-fill" id="hp-fill-monster" style="width: 100%"></div>
+        <div style="text-align: center; margin-top: 5px;">
+          <span id="monster-hp-text">8/8</span> HP
+        </div>
+      </div>
+      
+      <div class="player-actions">
+        <button class="btn btn-attack" onclick="playerAttack()">⚔️ 攻击</button>
+        <button class="btn btn-skill" onclick="playerSkill()">🎯 技能</button>
+        <button class="btn btn-flee" onclick="playerFlee()">🏃 逃跑</button>
+      </div>
+      
+      <div class="player-stats" style="margin-top: 15px;">
+        <h3>你的状态</h3>
+        <div class="status-panel">
+          <div>HP: <span id="player-hp">10</span> | 金币: <span id="player-gold">15</span> | 经验: <span id="player-exp">0/100</span></div>
+          <div>💪 力量: <span id="player-str">10</span></div>
+          <div>🦵 敏捷: <span id="player-dex">10</span></div>
+          <div>❤️ 体质: <span id="player-con">10</span></div>
+          <div>🧠 智力: <span id="player-int">10</span></div>
+          <div>👁️ 感知: <span id="player-wis">10</span></div>
+          <div>✨ 魅力: <span id="player-cha">10</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="log-panel">
+      <div style="border-bottom: 1px solid #333; padding-bottom: 10px;">
+        <strong>战斗日志</strong>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 简单的示例数据
+    const DUNGEONS = {
+      1: {
+        name: "土豆洞穴",
+        monsters: ["史莱姆", "史莱姆", "史莱姆"],
+        boss: "巨型史莱姆"
+      },
+      2: {
+        name: "哥布林营地",
+        monsters: ["哥布林", "哥布林", "狼"],
+        boss: "大地精"
+      },
+      3: {
+        name: "地下墓穴",
+        monsters: ["骷髅", "骷髅", "僵尸"],
+        boss: "女妖"
+      },
+      4: {
+        name: "兽人要塞",
+        monsters: ["兽人", "兽人", "兽人"],
+        boss: "巨狼"
+      },
+      5: {
+        name: "构造体工坊",
+        monsters: ["石魔像", "石魔像"],
+        boss: "铁魔像"
+      },
+      6: {
+        name: "龙之巢穴",
+        monsters: ["幼龙", "双足飞龙"],
+        boss: "幼龙"
+      },
+      7: {
+        name: "恶魔领域",
+        monsters: ["恶魔", "恶魔", "地狱犬"],
+        boss: "恶魔"
+      },
+      8: {
+        name: "无尽地城",
+        monsters: ["恶魔", "恶魔"],
+        boss: "恶魔"
+      }
+    };
+    
+    let currentDungeon = null;
+    let currentMonster = null;
+    let combatLog = [];
+    let player = {
+      hp: 10,
+      maxHp: 10,
+      gold: 15,
+      exp: 0,
+      str: 10,
+      dex: 10,
+      con: 10,
+      int: 10,
+      wis: 10,
+      cha: 10
+    };
+    
+    function selectDungeon(level) {
+      currentDungeon = DUNGEONS[level];
+      const dungeons = document.querySelectorAll('.dungeon-select button');
+      dungeons.forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.getElementById('game-container').classList.remove('hidden');
+      document.getElementById('main-panel').classList.add('hidden');
+      document.getElementById('combat-panel').classList.remove('hidden');
+      document.getElementById('log-panel').classList.remove('hidden');
+      document.getElementById('combat-panel').classList.add('show');
+      
+      // 清空战斗日志
+      combatLog = [];
+      currentMonster = DUNGEONS[level].boss;
+      
+      // 初始化怪物
+      const monster = {
+        name: currentMonster.name,
+        hp: currentMonster.hp,
+        maxHp: currentMonster.hp,
+        ac: currentMonster.ac,
+        atk: currentMonster.atk
+        type: currentMonster.type || 'beast',
+        skill: currentMonster.skill || null
+      };
+      
+      updateMonsterUI();
+      updatePlayerUI();
+      updateCombatLog();
+    }
+    
+    function playerAttack() {
+      const atkRoll = Math.floor(Math.random() * 20) + 1;
+      const playerAtkBonus = Math.floor((player.str - 10) / 2);
+      const totalAtk = atkRoll + playerAtkBonus;
+      
+      let playerDamage = 0;
+      let crit = false;
+      
+      if (totalAtk >= currentMonster.ac) {
+        // 暴击判定
+        if (atkRoll === 20) {
+          crit = true;
+          playerDamage = Math.max(1, (player.str - 10) + Math.floor(Math.random() * 8 + 4)) * 2;
+        } else {
+          playerDamage = Math.max(1, (player.str - 10) + Math.floor(Math.random() * 6 + 2));
+        }
+        
+        currentMonster.hp -= playerDamage;
+        
+        addCombatLog(`你用【巨剑】攻击！`, 'attack');
+        
+        if (currentMonster.hp <= 0) {
+          // 怪物被击败
+          defeatMonster();
+        } else {
+          // 怪物反击
+          setTimeout(monsterCounterattack, 1000);
+        }
+      }
+      
+      updateCombatUI();
+      checkCombatEnd();
+    }
+    
+    function monsterCounterattack() {
+      const defRoll = Math.floor(Math.random() * 20) + 1;
+      const monsterDef = defRoll + Math.floor((player.dex - 10) / 2);
+      const monsterAtkRoll = Math.floor(Math.random() * 20) + 1;
+      const totalDef = monsterAtkRoll + monsterDef;
+      
+      let damage = 0;
+      let hit = false;
+      
+      if (monsterAtkRoll + Math.max(0, (currentMonster.atk || 0) - 10) >= player.ac) {
+        hit = true;
+        const monsterAtkMod = Math.max(0, (currentMonster.atk || 0) - 10);
+        damage = Math.max(0, monsterAtkMod + Math.floor(Math.random() * 4 + 1));
+        currentMonster.hp -= damage;
+        
+        addCombatLog(`${currentMonster.name}发动【${currentMonster.skill || '普通'}】攻击！`, 'monster-skill');
+      }
+      
+      updateMonsterUI();
+      checkCombatEnd();
+    }
+    
+    function playerSkill() {
+      if (player.mp < 5) {
+        addCombatLog('MP不足！无法释放技能', 'error');
+        return;
+      }
+      
+      player.mp -= 5;
+      const skillEffect = `使用【${Math.random() > 0.7 ? '烈焰剑法' : '冰霜剑法'}】！`;
+      
+      const damage = Math.floor(Math.random() * 15) + 5;
+      currentMonster.hp -= damage;
+      
+      addCombatLog(skillEffect, 'player-skill');
+      updateMonsterUI();
+      checkCombatEnd();
+    }
+    
+    function playerFlee() {
+      if (Math.random() > 0.7) {
+        addCombatLog('逃跑成功！', 'success');
+      } else {
+        addCombatLog('逃跑失败！被追击', 'error');
+        currentMonster.hp = Math.max(0, currentMonster.hp - Math.floor(Math.random() * 10 + 4));
+        
+        setTimeout(monsterCounterattack, 2000);
+      }
+      
+      updateMonsterUI();
+      checkCombatEnd();
+    }
+    
+    function defeatMonster() {
+      // 掉落计算
+      const expGain = Math.floor(currentMonster.exp / 2);
+      const goldGain = Math.floor(currentMonster.gold / 1);
+      
+      player.gold += goldGain;
+      player.exp += expGain;
+      
+      addCombatLog(`【${currentMonster.name}】被击败！`, 'success');
+      addCombatLog(`获得 ${goldGain} 金币、${expGain} 经验`, 'reward');
+      
+      // 显示掉落
+      if (Math.random() < 0.3) {
+        const lootItem = { name: getLootName(), rarity: getRandomRarity() };
+        addCombatLog(`掉落【${lootItem.name}(${lootItem.rarity})】！`, 'loot');
+      }
+      
+      // 检查是否通关
+      if (DUNGEONS.indexOf(currentDungeon) < DUNGEONS.indexOf(currentDungeon) + 1) {
+        setTimeout(startNextDungeon, 2000);
+      } else {
+        setTimeout(showDungeonSelect, 1000);
+      }
+      
+      updatePlayerUI();
+    }
+    
+    function startNextDungeon() {
+      // 显示下一个地城
+      const nextLevel = DUNGEONS[DUNGEONS.indexOf(currentDungeon) + 1];
+      if (nextLevel) {
+        currentDungeon = nextLevel;
+        currentMonster = nextLevel.boss;
+        
+        addCombatLog(`\n进入 ${currentDungeon.name}...`, 'info');
+        updateMonsterUI();
+        updatePlayerUI();
+        updateCombatLog();
+      } else {
+        // 通关整个区域
+        addCombatLog(`🎉 恭喜！${currentDungeon.name}已清除！`, 'success');
+        player.gold += 100;
+        player.exp += 100;
+        
+        setTimeout(() => {
+          document.getElementById('combat-panel').classList.remove('show');
+          document.getElementById('log-panel').classList.remove('hidden');
+          document.getElementById('combat-panel').classList.add('show');
+          
+          // 清除地城选择
+          const dungeonSelect = document.getElementById('dungeon-select');
+          dungeonSelect.style.display = 'block';
+          
+          // 显示通关信息
+          const victoryPanel = document.getElementById('combat-panel');
+          victoryPanel.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <h2 style="color: #f39c12; font-size: 2em;">🎉 区域清除！</h2>
+              <p style="color: #888; margin-bottom: 20px;">恭喜你成功清除了 ${currentDungeon.name}！</p>
+              <p style="color: #95a5a6;">获得奖励：</p>
+              <ul style="list-style: none; padding-left: 40px;">
+                <li>💰 +100 金币</li>
+                <li>✨ +50 经验</li>
+                <li>🎁 获得稀有装备！</li>
+              </ul>
+              <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="continueToNextArea()">继续探险</button>
+              </div>
+          `;
+          
+          // 重置到地城选择
+          showDungeonSelect();
+        }, 1000);
+    }
+    
+    function continueToNextArea() {
+      const currentArea = Math.floor(DUNGEONS.indexOf(currentDungeon) / 2) + 1;
+      
+      if (currentArea <= DUNGEONS.length / 2) {
+        // 已全部通关
+        addCombatLog('🎉 恭喜！你已经清除了所有地城，成为传奇冒险者！', 'success');
+        
+        // 返回开始界面
+        setTimeout(() => {
+          document.getElementById('combat-panel').classList.remove('show');
+          document.getElementById('log-panel').classList.remove('hidden');
+          
+          const dungeonSelect = document.getElementById('dungeon-select');
+          dungeonSelect.style.display = 'block';
+          
+          const victoryPanel = document.getElementById('combat-panel');
+          victoryPanel.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <h2 style="color: #f39c12; font-size: 2.5em;">🎉 传奇冒险者</h2>
+              <p style="color: #888; margin-bottom: 20px;">你已成为传说中的冒险者！</p>
+              <p style="color: #95a5a6;">完成度：8/8 地城</p>
+              <p style="color: #95a5a6;">总击杀数：<span id="total-kills">0</span></p>
+              <p style="color: #95a5a6;">总获得装备：<span id="total-loot">0</span></p>
+              <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="startNewGame()">重新开始</button>
+              </div>
+          `;
+        }, 500);
+      }
+    }
+    
+    function startNewGame() {
+      // 重置游戏
+      player = {
+        hp: 10,
+        maxHp: 10,
+        gold: 15,
+        exp: 0,
+        str: 10,
+        dex: 10,
+        con: 10,
+        int: 10,
+        wis: 10,
+        cha: 10
+      };
+      combatLog = [];
+      currentDungeon = null;
+      
+      updateMonsterUI();
+      updatePlayerUI();
+      updateCombatLog();
+      
+      document.getElementById('combat-panel').classList.remove('show');
+      document.getElementById('log-panel').classList.remove('hidden');
+      
+      // 显示开始界面
+      const mainPanel = document.getElementById('main-panel');
+      mainPanel.innerHTML = `
+        <h2>🏰 探索中...</h2>
+        <p style="color: #888;">选择一个地城开始冒险</p>
+        
+        <div id="dungeon-select">
+          <button onclick="selectDungeon(1)">🏰 1. 土豆洞穴</button>
+          <button onclick="selectDungeon(2)">🏕️ 2. 哥布林营地</button>
+          <button onclick="selectDungeon(3)">💀 3. 地下墓穴</button>
+          <button onclick="selectDungeon(5)">⚙️ 4. 兽人要塞</button>
+          <button onclick="selectDungeon(7)">🐉 6. 构造体工坊</button>
+          <button onclick="selectDungeon(8)">🔥 7. 恶魔领域</button>
+        </div>
+      `;
+      
+      showDungeonSelect();
+    }
+    
+    function updateMonsterUI() {
+      document.getElementById('monster-hp').textContent = currentMonster.hp;
+      document.getElementById('monster-hp-text').textContent = `${currentMonster.hp}/${currentMonster.maxHp}`;
+      document.getElementById('hp-fill-monster').style.width = `${(currentMonster.hp / currentMonster.maxHp) * 100}%`;
+      
+      // 更新状态面板
+      const statusPanel = document.getElementById('status-panel');
+      statusPanel.innerHTML = `
+        <div>HP: <span id="player-hp">10</span> | 金币: <span id="player-gold">15</span> | 经验: <span id="player-exp">0/100</span></div>
+      `;
+    }
+    
+    function updatePlayerUI() {
+      document.getElementById('player-gold').textContent = player.gold;
+      document.getElementById('player-exp').textContent = `${player.exp}/${Math.floor(player.exp / 100) * 100}%`;
+    }
+    
+    function updateCombatLog() {
+      const logPanel = document.getElementById('log-panel');
+      logPanel.innerHTML = `<div style="border-bottom: 1px solid #333; padding-bottom: 10px;">
+        <strong>战斗日志</strong>
+      </div>
+    `;
+      
+      if (combatLog.length === 0) {
+        logPanel.innerHTML += `
+          <div style="color: #888; font-size: 0.9em; text-align: center; padding: 20px;">等待战斗开始...</div>
+        `;
+      }
+      
+      combatLog.forEach((log, index) => {
+        logPanel.innerHTML += `
+          <div style="color: ${log.type === 'attack' ? '#f39c12' : '#e74c3c'}; padding: 10px; margin-bottom: 5px;">
+            ${index + 1}. ${log.message}
+          </div>
+        `;
+      });
+    }
+    
+    function addCombatLog(message, type) {
+      combatLog.push({ message, type, time: new Date() });
+      
+      // 限制日志长度
+      if (combatLog.length > 50) {
+        combatLog.shift();
+      }
+      
+      updateCombatLog();
+    }
+    
+    function getLootName() {
+      const prefixes = ['生锈的', '精铁', '秘银', '魔法', '龙骨', '虚空'];
+      const suffixes = ['剑', '斧', '盾', '戒指', '项链', '法杖'];
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+      return `${prefix}${suffix}`;
+    }
+    
+    function getRandomRarity() {
+      const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+      const chance = Math.random();
+      
+      if (chance > 0.99) return 'legendary';
+      if (chance > 0.95) return 'epic';
+      if (chance > 0.85) return 'rare';
+      if (chance > 0.65) return 'uncommon';
+      return 'common';
+    }
+    
+    function checkCombatEnd() {
+      if (currentMonster.hp <= 0 && !currentMonster.transitioning) {
+        // 战斗结束
+        currentMonster.transitioning = true;
+        
+        setTimeout(() => {
+          currentMonster.transitioning = false;
+          if (currentMonster.hp <= 0) {
+            // 怪物被击败
+            const defeatedMsg = document.getElementById('result-desc');
+            defeatedMsg.textContent = '【战斗结束】';
+          } else {
+            // 轮到下一回合
+            const turnMsg = document.getElementById('result-desc');
+            turnMsg.textContent = `${currentMonster.name} 的回合...`;
+          }
+          
+          updateCombatLog();
+        }, 1000);
+      }
+    }
+  </script>
+</body>
+</html>

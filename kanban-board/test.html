@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>测试页面</title>
+</head>
+<body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+  <h1>✅ 服务器正常运行！</h1>
+  <p>看板访问地址：</p>
+  <p><a href="/kanban-board/index.html" style="font-size: 20px; color: #3498db;">📋 点击进入看板</a></p>
+  <p style="color: #888; margin-top: 30px;">
+    当前时间：<span id="time"></span>
+  </p>
+  <script>
+    function updateTime() {
+      document.getElementById('time').textContent = new Date().toLocaleString('zh-CN');
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>

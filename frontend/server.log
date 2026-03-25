@@ -1,0 +1,78 @@
+
+> frontend@0.1.0 dev
+> next dev -p 10000
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:10000
+- Network:       http://10.3.0.12:10000
+
+✓ Starting...
+✓ Ready in 958ms
+ GET / 200 in 592ms (compile: 395ms, render: 197ms)
+⚠ Cross origin request detected from 129.226.204.202 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET / 200 in 178ms (compile: 17ms, render: 161ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 1115ms (compile: 13ms, render: 1103ms)
+ GET / 200 in 160ms (compile: 8ms, render: 153ms)
+ GET / 200 in 114ms (compile: 6ms, render: 108ms)
+ GET / 200 in 64ms (compile: 4ms, render: 60ms)
+ GET /.git/config 404 in 2.9s (compile: 2.7s, render: 207ms)
+ GET / 200 in 81ms (compile: 11ms, render: 70ms)
+ GET / 200 in 174ms (compile: 12ms, render: 162ms)
+ GET /wiki 404 in 80ms (compile: 9ms, render: 71ms)
+ GET / 200 in 228ms (compile: 126ms, render: 102ms)
+ GET / 200 in 142ms (compile: 13ms, render: 129ms)
+ GET /wiki 404 in 105ms (compile: 16ms, render: 89ms)
+ GET / 200 in 74ms (compile: 17ms, render: 57ms)
+ GET / 200 in 75ms (compile: 6ms, render: 68ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 676ms (compile: 5ms, render: 671ms)
+ HEAD / 200 in 78ms (compile: 4ms, render: 74ms)
+Error: Failed to find Server Action "1zz3". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 508ms (compile: 9ms, render: 499ms)
+ GET / 200 in 138ms (compile: 22ms, render: 116ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST /adfa 404 in 499ms (compile: 5ms, render: 494ms)
+Error: Failed to find Server Action "tjmf84". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 641ms (compile: 6ms, render: 636ms)
+ GET / 200 in 150ms (compile: 11ms, render: 139ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST /adfa 404 in 670ms (compile: 9ms, render: 661ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 876ms (compile: 15ms, render: 861ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 488ms (compile: 4ms, render: 485ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 734ms (compile: 13ms, render: 721ms)
+Error: Failed to find Server Action "x". This request might be from an older or newer deployment.
+Read more: https://nextjs.org/docs/messages/failed-to-find-server-action
+    at ignore-listed frames
+ POST / 404 in 1040ms (compile: 15ms, render: 1025ms)
+ GET / 200 in 102ms (compile: 13ms, render: 88ms)
+○ Compiling /_error ...
+ POST / 404 in 4.4s (compile: 4.3s, render: 102ms)
+ POST / 404 in 69ms (compile: 15ms, render: 54ms)
+ POST / 404 in 41ms (compile: 11ms, render: 30ms)
+ GET / 404 in 352ms (compile: 237ms, render: 115ms)
+ GET / 404 in 121ms (compile: 49ms, render: 73ms)
+ GET / 404 in 219ms (compile: 170ms, render: 49ms)
+ GET / 404 in 233ms (compile: 174ms, render: 59ms)

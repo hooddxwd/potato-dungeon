@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="version" content="v3.3-all">
+  <title>🥔 土豆地城</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #eee; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 30px 0; }
+    .header h1 { font-size: 3em; background: linear-gradient(45deg, #f39c12, #e74c3c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .header p { color: #888; margin-top: 10px; }
+    .card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+    .card h2 { color: #f39c12; margin-bottom: 15px; font-size: 1.3em; }
+    .auth-form input { width: 100%; padding: 12px; margin-bottom: 15px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; }
+    .auth-form input::placeholder { color: #666; }
+    .btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.3s; margin-right: 10px; }
+    .btn-primary { background: linear-gradient(45deg, #f39c12, #e67e22); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(243,156,18,0.4); }
+    .btn-success { background: linear-gradient(45deg, #27ae60, #2ecc71); color: #fff; }
+    .btn-danger { background: linear-gradient(45deg, #e74c3c, #c0392b); color: #fff; }
+    .btn-small { padding: 8px 16px; font-size: 14px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .stat-box { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; text-align: center; }
+    .stat-box .icon { font-size: 2em; }
+    .stat-box .name { color: #888; font-size: 0.9em; margin: 5px 0; }
+    .stat-box .value { font-size: 1.5em; font-weight: bold; }
+    .stat-box .mod { color: #f39c12; font-size: 0.9em; }
+    .exp-bar { height: 6px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+    .exp-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2980b9); transition: width 0.3s; }
+    .exp-text { font-size: 0.7em; color: #888; margin-top: 2px; }
+    .bonus { color: #2ecc71; font-size: 0.8em; }
+    .character-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .character-info .level { background: linear-gradient(45deg, #9b59b6, #8e44ad); padding: 8px 20px; border-radius: 20px; font-weight: bold; }
+    .character-info .hp-bar { width: 100%; height: 20px; background: #333; border-radius: 10px; margin-top: 10px; overflow: hidden; }
+    .character-info .hp-fill { height: 100%; background: linear-gradient(90deg, #e74c3c, #c0392b); transition: width 0.3s; }
+    .gold-display { color: #f1c40f; font-size: 1.2em; }
+    .todo-input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+    .todo-input-group input { flex: 1; padding: 12px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #fff; }
+    .todo-list { list-style: none; }
+    .todo-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; margin-bottom: 10px; }
+    .todo-item.completed { opacity: 0.5; }
+    .todo-item .todo-info h4 { margin-bottom: 5px; }
+    .todo-item .todo-info .exp-bonus { color: #27ae60; font-size: 0.9em; }
+    .todo-item .todo-actions { display: flex; gap: 10px; }
+    .attribute-select { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+    .attr-btn { padding: 8px 15px; border-radius: 20px; border: 2px solid #444; background: transparent; color: #888; cursor: pointer; transition: all 0.3s; }
+    .attr-btn.selected { border-color: #f39c12; background: rgba(243,156,18,0.2); color: #f39c12; }
+    .dungeon-list { display: grid; gap: 15px; }
+    .dungeon-item { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .dungeon-item .dungeon-info h3 { color: #e74c3c; }
+    .dungeon-item .dungeon-info .level-req { color: #888; }
+    .adventure-result { text-align: center; padding: 30px; }
+    .adventure-result .result-icon { font-size: 4em; margin-bottom: 20px; }
+    .adventure-result .rewards { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
+    .adventure-result .reward { background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 10px; }
+    .adventure-result .reward .value { font-size: 1.5em; color: #f39c12; }
+    .adventure-result .reward .label { color: #888; font-size: 0.9em; }
+    .notification { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; color: #fff; animation: slideIn 0.3s ease; z-index: 1000; }
+    .notification.success { background: linear-gradient(45deg, #27ae60, #2ecc71); }
+    .notification.error { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+    .notification.info { background: linear-gradient(45deg, #3498db, #2980b9); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .hidden { display: none !important; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; border-radius: 8px; background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s; }
+    .tab.active { background: linear-gradient(45deg, #f39c12, #e67e22); }
+    /* 装备样式 */
+    .equipment-grid { display: grid; gap: 10px; }
+    .equipment-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border-left: 4px solid #888; }
+    .equipment-item.equipped { border-left-color: #27ae60; }
+    .equipment-item.common { border-left-color: #95a5a6; }
+    .equipment-item.uncommon { border-left-color: #2ecc71; }
+    .equipment-item.rare { border-left-color: #3498db; }
+    .equipment-item.epic { border-left-color: #9b59b6; }
+    .equipment-item.legendary { border-left-color: #f1c40f; }
+    .equipment-info h4 { margin-bottom: 5px; }
+    .equipment-info .rarity { font-size: 0.8em; color: #888; }
+    .equipment-info .bonus { font-size: 0.85em; color: #2ecc71; }
+    .equipment-actions { display: flex; gap: 8px; }
+    .rarity-common { color: #95a5a6; }
+    .rarity-uncommon { color: #2ecc71; }
+    .rarity-rare { color: #3498db; }
+    .rarity-epic { color: #9b59b6; }
+    .rarity-legendary { color: #f1c40f; }
+    .shop-grid { display: grid; gap: 10px; }
+    .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+    .shop-item.potion { border-left: 4px solid #e74c3c; }
+    .shop-item.weapon { border-left: 4px solid #e67e22; }
+    .shop-item.armor { border-left: 4px solid #3498db; }
+    .shop-item.accessory { border-left: 4px solid #9b59b6; }
+    .shop-info h4 { margin-bottom: 5px; }
+    .shop-info .desc { font-size: 0.85em; color: #888; }
+    .shop-info .price { color: #f1c40f; font-weight: bold; }
+    .dungeon-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; padding: 20px; }
+    .dungeon-room { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 2.5em; background: rgba(255,255,255,0.05); border-radius: 12px; transition: all 0.3s; }
+    .dungeon-room.current { background: rgba(155,89,182,0.2); border: 2px solid #9b59b6; }
+    .dungeon-room.combat { color: #e74c3c; }
+    .dungeon-room.treasure { color: #f1c40f; }
+    .dungeon-room.trap { color: #e67e22; }
+    .dungeon-room.rest { color: #2ecc71; }
+    .dungeon-room.boss { color: #9b59b6; }
+    .skill-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result-text { margin-bottom: 10px; }
+    .reward-text { margin-top: 10px; }
+    .reward-text div { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🥔 土豆地城</h1>
+      <p>完成使命变得更强大！</p>
+    </div>
+    
+    <div id="auth-view" class="card">
+      <h2>🌟 开始冒险</h2>
+      <form class="auth-form" id="login-form">
+        <input type="text" id="username" placeholder="用户名" required>
+        <input type="password" id="password" placeholder="密码" required>
+        <button type="submit" class="btn btn-primary">登录</button>
+        <button type="button" class="btn" onclick="showRegister()">注册新角色</button>
+      </form>
+    </div>
+    
+    <div id="register-view" class="card hidden">
+      <h2>🆕 创建新角色</h2>
+      <form class="auth-form" id="register-form">
+        <input type="text" id="reg-username" placeholder="用户名" required>
+        <input type="password" id="reg-password" placeholder="密码" required>
+        <div style="margin-bottom: 15px;">
+          <label style="color: #888; margin-bottom: 5px; display: block;">选择职业</label>
+          <select id="reg-profession" style="width: 100%; padding: 12px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px;">
+            <option value="">不选择职业（默认属性）</option>
+          </select>
+        </div>
+        <div id="profession-desc" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.9em; color: #888;"></div>
+        <button type="submit" class="btn btn-primary">创建</button>
+        <button type="button" class="btn" onclick="showLogin()">返回登录</button>
+      </form>
+    </div>
+    
+    <div id="game-view" class="hidden">
+      <div class="card">
+        <div class="character-info">
+          <div>
+            <h2 id="char-name">角色名</h2>
+            <span class="level" id="char-level">Lv.1</span>
+          </div>
+          <div class="gold-display">💰 <span id="char-gold">0</span></div>
+        </div>
+        <div class="hp-bar">
+          <div class="hp-fill" id="hp-fill" style="width: 100%"></div>
+        </div>
+        <p style="text-align: center; margin-top: 5px;">
+          ❤️ <span id="char-hp">10</span> / <span id="char-max-hp">10</span> HP | ✨ 经验: <span id="char-exp">0</span>/100
+        </p>
+      </div>
+      
+      <div class="card">
+        <h2>📊 属性</h2>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="icon">💪</div><div class="name">力量 STR</div><div class="value" id="stat-str">10</div><div class="mod" id="mod-str">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-str" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-str">0/100</div>
+            <div class="bonus" id="bonus-str"></div>
+          </div>
+          <div class="stat-box">
+            <div class="icon">🦵</div><div class="name">敏捷 DEX</div><div class="value" id="stat-dex">10</div><div class="mod" id="mod-dex">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-dex" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-dex">0/100</div>
+            <div class="bonus" id="bonus-dex"></div>
+          </div>
+          <div class="stat-box">
+            <div class="icon">❤️</div><div class="name">体质 CON</div><div class="value" id="stat-con">10</div><div class="mod" id="mod-con">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-con" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-con">0/100</div>
+            <div class="bonus" id="bonus-con"></div>
+          </div>
+          <div class="stat-box">
+            <div class="icon">🧠</div><div class="name">智力 INT</div><div class="value" id="stat-int">10</div><div class="mod" id="mod-int">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-int" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-int">0/100</div>
+            <div class="bonus" id="bonus-int"></div>
+          </div>
+          <div class="stat-box">
+            <div class="icon">👁️</div><div class="name">感知 WIS</div><div class="value" id="stat-wis">10</div><div class="mod" id="mod-wis">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-wis" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-wis">0/100</div>
+            <div class="bonus" id="bonus-wis"></div>
+          </div>
+          <div class="stat-box">
+            <div class="icon">✨</div><div class="name">魅力 CHA</div><div class="value" id="stat-cha">10</div><div class="mod" id="mod-cha">+0</div>
+            <div class="exp-bar"><div class="exp-fill" id="exp-fill-cha" style="width: 0%"></div></div>
+            <div class="exp-text" id="exp-cha">0/100</div>
+            <div class="bonus" id="bonus-cha"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('todos')">📝 任务</div>
+        <div class="tab" onclick="switchTab('dungeons')">⚔️ 地城</div>
+        <div class="tab" onclick="switchTab('equipment')">⚔️ 装备</div>
+        <div class="tab" onclick="switchTab('shop')">🏪 商店</div>
+        <div class="tab" onclick="switchTab('friends')">👥 好友</div>
+        <div class="tab" onclick="switchTab('parties')">👥 组队</div>
+        <div class="tab" onclick="logout()">🚪 退出</div>
+      </div>
+      
+      <div id="todos-panel" class="card">
+        <h2>📝 任务清单</h2>
+        <div class="todo-input-group">
+          <input type="text" id="todo-title" placeholder="新任务...">
+          <button class="btn btn-primary" onclick="createTodo()">添加</button>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span style="color: #888; margin-right: 10px;">难度：</span>
+          <label style="margin-right: 15px;"><input type="radio" name="difficulty" value="easy"> 简单 (+10)</label>
+          <label style="margin-right: 15px;"><input type="radio" name="difficulty" value="normal" checked> 普通 (+20)</label>
+          <label><input type="radio" name="difficulty" value="hard"> 困难 (+35)</label>
+        </div>
+        <div class="attribute-select">
+          <button class="attr-btn selected" data-attr="str" onclick="toggleAttr(this)">💪</button>
+          <button class="attr-btn selected" data-attr="dex" onclick="toggleAttr(this)">🦵</button>
+          <button class="attr-btn selected" data-attr="con" onclick="toggleAttr(this)">❤️</button>
+          <button class="attr-btn" data-attr="int" onclick="toggleAttr(this)">🧠</button>
+          <button class="attr-btn" data-attr="wis" onclick="toggleAttr(this)">👁️</button>
+          <button class="attr-btn" data-attr="cha" onclick="toggleAttr(this)">✨</button>
+        </div>
+        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">选中的属性完成任务后将获得经验值（每次 +1）</p>
+        <ul class="todo-list" id="todo-list"></ul>
+      </div>
+      
+      <div id="dungeons-panel" class="card hidden">
+        <h2>⚔️ 地城冒险</h2>
+        <p style="color: #888; margin-bottom: 15px;">探索地城并遭遇怪物。使用你的属性来战斗和通过检定！击败怪物有机会获得装备！</p>
+        <div class="dungeon-list" id="dungeon-list"></div>
+      </div>
+      
+      <div id="equipment-panel" class="card hidden">
+        <h2>⚔️ 装备</h2>
+        <p style="color: #888; margin-bottom: 15px;">击败怪物有30%几率掉落装备！穿戴装备获得属性加成。出售装备获得金币。</p>
+        <div class="equipment-grid" id="equipment-list"></div>
+      </div>
+      
+      <div id="shop-panel" class="card hidden">
+        <h2>🏪 商店</h2>
+        <p style="color: #888; margin-bottom: 15px;">购买恢复药水和装备。金币不足无法购买。</p>
+        <div class="shop-grid" id="shop-list"></div>
+      </div>
+      
+      <div id="adventure-result" class="card hidden">
+        <div class="adventure-result">
+          <div class="result-icon" id="result-icon">⚔️</div>
+          <h2 id="result-title">战斗结果</h2>
+          <p id="result-desc" style="color: #888; margin-top: 10px;">...</p>
+          <div class="rewards">
+            <div class="reward"><div class="value" id="reward-gold">+0</div><div class="label">💰 金币</div></div>
+            <div class="reward"><div class="value" id="reward-exp">+0</div><div class="label">✨ 经验</div></div>
+          </div>
+          <div id="equipment-reward" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(155,89,182,0.2); border-radius: 10px;">
+            <div style="color: #9b59b6; font-weight: bold;">🎁 获得装备：<span id="reward-equipment-name"></span></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top: 20px;" onclick="closeAdventureResult()">继续</button>
+        </div>
+      </div>
+      
+      <!-- 地城探索界面 -->
+      <div id="dungeon-view" class="card hidden">
+        <h2>🏰 地城探索</h2>
+        <div class="dungeon-info" style="margin-bottom: 20px; text-align: center; color: #888;">
+          <span id="floor-info">第 1/7 层</span> | <span id="room-info">房间 1/5</span>
+        </div>
+        <div class="dungeon-rooms" id="dungeon-rooms"></div>
+        <div class="dungeon-actions" style="margin-top: 20px; text-align: center;">
+          <button class="btn btn-primary" onclick="exploreRoom()">🔍 探索房间</button>
+          <button class="btn" onclick="exitDungeon()">🚪 退出地城</button>
+        </div>
+        <div id="exploration-result" class="hidden" style="margin-top: 20px; padding: 15px; background: rgba(155,89,182,0.1); border-radius: 10px;"></div>
+      </div>
+      
+      <!-- 战斗界面 -->
+      <div id="battle-view" class="card hidden">
+        <h2>⚔️ 战斗中</h2>
+        <div class="battle-info" style="display: flex; justify-content: space-around; margin-bottom: 20px;">
+          <div style="text-align: center;">
+            <div style="font-size: 3em; margin-bottom: 5px;">👹</div>
+            <div id="battle-monster-name" style="color: #e74c3c;">怪物</div>
+            <div id="battle-monster-hp">8/8</div>
+          </div>
+          <div style="font-size: 2em;">⚔️</div>
+          <div style="text-align: center;">
+            <div style="font-size: 3em; margin-bottom: 5px;">🧙</div>
+            <div id="battle-player-hp" style="color: #2ecc71;">50/50</div>
+            <div id="battle-player-mp" style="color: #3498db; margin-top: 5px;">10/10</div>
+          </div>
+        </div>
+        <div style="text-align: center; color: #888; margin-bottom: 15px;">
+          <span id="battle-turn">回合 1</span>
+        </div>
+        <div class="battle-actions" style="text-align: center;">
+          <button class="btn btn-danger" onclick="attack()">⚔️ 攻击</button>
+          <div id="skill-buttons" style="margin-top: 10px;"></div>
+        </div>
+        <div id="battle-log" style="margin-top: 20px; padding: 15px; background: rgba(231,76,60,0.1); border-radius: 10px; max-height: 200px; overflow-y: auto;"></div>
+      </div>
+      
+      <!-- 好友界面 -->
+      <div id="friends-panel" class="card hidden">
+        <h2>👥 好友</h2>
+        <div class="friend-input-group">
+          <input type="text" id="friend-username" placeholder="输入用户名添加好友">
+          <button class="btn btn-primary" onclick="addFriend()">添加</button>
+        </div>
+        <div style="margin-top: 20px;">
+          <h3 style="margin-bottom: 10px;">好友列表</h3>
+          <ul id="friend-list" style="list-style: none;"></ul>
+        </div>
+        <div style="margin-top: 20px;">
+          <h3 style="margin-bottom: 10px;">好友请求</h3>
+          <ul id="friend-requests" style="list-style: none;"></ul>
+        </div>
+      </div>
+      
+      <!-- 组队界面 -->
+      <div id="parties-panel" class="card hidden">
+        <h2>👥 组队</h2>
+        <div class="party-info" id="my-party" style="margin-bottom: 20px; padding: 15px; background: rgba(155,89,182,0.1); border-radius: 10px;"></div>
+        <div class="party-input-group" id="create-party-group" style="margin-bottom: 20px;">
+          <input type="text" id="party-name" placeholder="队伍名称" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; margin-right: 10px;">
+          <input type="text" id="party-code" placeholder="队伍ID加入" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; margin-right: 10px;">
+          <button class="btn btn-primary" onclick="createParty()">创建队伍</button>
+          <button class="btn" onclick="joinParty()">加入队伍</button>
+        </div>
+        <div style="margin-top: 20px;">
+          <h3>队伍成员</h3>
+          <ul id="party-members" style="list-style: none;"></ul>
+        </div>
+        <div style="margin-top: 20px; text-align: center;">
+          <button class="btn btn-danger" onclick="leaveParty()" id="leave-party-btn">离队/解散</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 自动检测API地址
+    const API_BASE = location.protocol + '//' + location.hostname + ':10001/api';
+    console.log('API_BASE:', API_BASE);
+    
+    let currentCharacter = null;
+    let currentProfession = null;
+    let selectedAttrs = ['str', 'dex', 'con'];
+    let equipmentBonus = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+    let professions = [];
+    let currentDungeonRun = null;
+    let currentBattle = null;
+    let playerSkills = [];
+
+    function getMod(score) { return Math.floor((score - 10) / 2); }
+
+    function showNotification(msg, type = 'info') {
+      const div = document.createElement('div');
+      div.className = 'notification ' + type;
+      div.textContent = msg;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    async function loadProfessions() {
+      const res = await fetch(API_BASE + '/professions');
+      const data = await res.json();
+      if (data.success) {
+        professions = data.professions;
+        const select = document.getElementById('reg-profession');
+        select.innerHTML = '<option value="">不选择职业（默认属性）</option>';
+        professions.forEach(prof => {
+          select.innerHTML += '<option value="' + prof.id + '">' + prof.display_name + '</option>';
+        });
+      }
+    }
+
+    function showProfessionDesc() {
+      const select = document.getElementById('reg-profession');
+      const descEl = document.getElementById('profession-desc');
+      const professionId = select.value;
+      if (!professionId) {
+        descEl.textContent = '不选择职业将使用默认属性（全10）';
+        return;
+      }
+      const prof = professions.find(p => p.id == professionId);
+      if (prof) {
+        const baseStats = JSON.parse(prof.base_stats);
+        const skills = JSON.parse(prof.skills);
+        let statsText = [];
+        if (baseStats.str) statsText.push('力量+' + baseStats.str);
+        if (baseStats.dex) statsText.push('敏捷+' + baseStats.dex);
+        if (baseStats.con) statsText.push('体质+' + baseStats.con);
+        if (baseStats.int) statsText.push('智力+' + baseStats.int);
+        if (baseStats.wis) statsText.push('感知+' + baseStats.wis);
+        if (baseStats.cha) statsText.push('魅力+' + baseStats.cha);
+        descEl.innerHTML = '<strong>' + prof.description + '</strong><br>' +
+          '属性加成：' + statsText.join('、') + '<br>' +
+          '被动技能：' + (skills.passive || []).join('、') + '<br>' +
+          '主动技能：' + (skills.active || []).join('、');
+      }
+    }
+
+    function showRegister() {
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('register-view').classList.remove('hidden');
+      loadProfessions();
+      document.getElementById('reg-profession').onchange = showProfessionDesc;
+      showProfessionDesc();
+    }
+    
+    function showLogin() {
+      document.getElementById('register-view').classList.add('hidden');
+      document.getElementById('auth-view').classList.remove('hidden');
+    }
+    
+    document.getElementById('login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      console.log('Login form submitted');
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      console.log('Login attempt:', username);
+      
+      try {
+        const res = await fetch(API_BASE + '/auth/login', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({username, password}) 
+        });
+        const data = await res.json();
+        console.log('Login response:', data);
+        
+        if (data.success) {
+          console.log('Login successful, character:', data.character);
+          currentCharacter = data.character;
+          currentProfession = data.profession || null;
+          localStorage.setItem('characterId', currentCharacter.id);
+          showGame();
+          loadTodos();
+          loadDungeons();
+          loadEquipment();
+          showNotification('登录成功！欢迎回来，' + currentCharacter.name, 'success');
+        }
+        else { 
+          console.error('Login failed:', data.message);
+          showNotification(data.message || '登录失败', 'error'); 
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        showNotification('登录失败：' + err.message, 'error');
+      }
+    };
+    
+    document.getElementById('register-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('reg-username').value;
+      const password = document.getElementById('reg-password').value;
+      const professionId = document.getElementById('reg-profession').value || null;
+      const res = await fetch(API_BASE + '/auth/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password, professionId}) });
+      const data = await res.json();
+      if (data.success) {
+        const prof = professionId ? professions.find(p => p.id == professionId) : null;
+        const baseStats = prof ? JSON.parse(prof.base_stats) : { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+        currentCharacter = {
+          id: data.characterId,
+          name: username,
+          level: 1,
+          exp: 0,
+          hp: 10,
+          max_hp: 10,
+          gold: 0,
+          str: 10 + (baseStats.str || 0),
+          dex: 10 + (baseStats.dex || 0),
+          con: 10 + (baseStats.con || 0),
+          int_score: 10 + (baseStats.int || 0),
+          wis: 10 + (baseStats.wis || 0),
+          cha: 10 + (baseStats.cha || 0),
+          profession_id: professionId
+        };
+        localStorage.setItem('characterId', currentCharacter.id);
+        showGame();
+        loadTodos();
+        loadDungeons();
+        loadEquipment();
+        showNotification('欢迎来到土豆地城！' + (prof ? '你选择了 ' + prof.display_name + ' 职业！' : ''), 'success');
+      }
+      else { showNotification(data.message, 'error'); }
+    };
+    
+    function showGame() {
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('register-view').classList.add('hidden');
+      document.getElementById('game-view').classList.remove('hidden');
+      updateCharacterUI();
+    }
+    
+    function updateCharacterUI() {
+      if (!currentCharacter) return;
+      document.getElementById('char-name').textContent = currentCharacter.name + (currentProfession ? ' (' + currentProfession.display_name + ')' : '');
+      document.getElementById('char-level').textContent = 'Lv.' + currentCharacter.level;
+      document.getElementById('char-gold').textContent = currentCharacter.gold;
+      document.getElementById('char-hp').textContent = currentCharacter.hp;
+      document.getElementById('char-max-hp').textContent = currentCharacter.max_hp;
+      document.getElementById('char-exp').textContent = currentCharacter.exp + '/100';
+      document.getElementById('hp-fill').style.width = (currentCharacter.hp / currentCharacter.max_hp * 100) + '%';
+
+      const attrs = [
+        { key: 'str', k: 'str' },
+        { key: 'dex', k: 'dex' },
+        { key: 'con', k: 'con' },
+        { key: 'int_score', k: 'int' },
+        { key: 'wis', k: 'wis' },
+        { key: 'cha', k: 'cha' }
+      ];
+
+      attrs.forEach(a => {
+        const val = currentCharacter[a.key];
+        const expKey = a.k + '_exp';
+        const attrExp = currentCharacter[expKey] || 0;
+
+        document.getElementById('stat-' + a.k).textContent = val;
+        document.getElementById('mod-' + a.k).textContent = (getMod(val) >= 0 ? '+' : '') + getMod(val);
+        document.getElementById('bonus-' + a.k).textContent = (equipmentBonus[a.k] || 0) > 0 ? '(+' + equipmentBonus[a.k] + ')' : '';
+        document.getElementById('exp-fill-' + a.k).style.width = (attrExp / 25 * 100) + '%';
+        document.getElementById('exp-' + a.k).textContent = attrExp + '/25';
+      });
+    }
+    
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('todos-panel').classList.add('hidden');
+      document.getElementById('dungeons-panel').classList.add('hidden');
+      document.getElementById('equipment-panel').classList.add('hidden');
+      document.getElementById('shop-panel').classList.add('hidden');
+      document.getElementById('friends-panel').classList.add('hidden');
+      document.getElementById('parties-panel').classList.add('hidden');
+      document.getElementById('adventure-result').classList.add('hidden');
+      
+      if (tab === 'todos') document.getElementById('todos-panel').classList.remove('hidden');
+      if (tab === 'dungeons') document.getElementById('dungeons-panel').classList.remove('hidden');
+      if (tab === 'equipment') { document.getElementById('equipment-panel').classList.remove('hidden'); loadEquipment(); }
+      if (tab === 'shop') { document.getElementById('shop-panel').classList.remove('hidden'); loadShop(); }
+      if (tab === 'friends') { document.getElementById('friends-panel').classList.remove('hidden'); loadFriends(); }
+      if (tab === 'parties') { document.getElementById('parties-panel').classList.remove('hidden'); loadParty(); }
+    }
+    
+    function toggleAttr(btn) {
+      btn.classList.toggle('selected');
+      const attr = btn.dataset.attr;
+      if (btn.classList.contains('selected')) { if (!selectedAttrs.includes(attr)) selectedAttrs.push(attr); }
+      else { selectedAttrs = selectedAttrs.filter(a => a !== attr); }
+    }
+    
+    async function createTodo() {
+      console.log('createTodo called');
+      
+      const title = document.getElementById('todo-title').value.trim();
+      if (!title) {
+        console.error('Empty title');
+        return showNotification('请输入任务名称', 'error');
+      }
+      
+      if (!currentCharacter || !currentCharacter.id) {
+        console.error('No character', currentCharacter);
+        return showNotification('请先登录', 'error');
+      }
+      
+      console.log('Creating todo:', title, 'for character:', currentCharacter.id);
+      
+      // 获取难度
+      const difficultyEl = document.querySelector('input[name="difficulty"]:checked');
+      const difficulty = difficultyEl ? difficultyEl.value : 'normal';
+      console.log('Difficulty:', difficulty);
+      
+      const exp = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+      console.log('Selected attrs before:', selectedAttrs);
+      selectedAttrs.forEach(attr => {
+        exp[attr] = 1;
+        console.log('Attr', attr, 'will get exp');
+      });
+      console.log('Exp to submit:', exp);
+      
+      try {
+        const res = await fetch(API_BASE + '/todos', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({ 
+            characterId: currentCharacter.id, 
+            title, 
+            difficulty,
+            strExp: exp.str, 
+            dexExp: exp.dex, 
+            conExp: exp.con, 
+            intExp: exp.int, 
+            wisExp: exp.wis, 
+            chaExp: exp.cha 
+          }) 
+        });
+        const data = await res.json();
+        console.log('Create todo response:', data);
+        
+        if (data.success) { 
+          document.getElementById('todo-title').value = ''; 
+          loadTodos(); 
+          showNotification('任务已创建！', 'success');
+        } else {
+          console.error('Create todo failed:', data);
+          showNotification(data.message || '创建失败', 'error');
+        }
+      } catch (err) {
+        console.error('Create todo error:', err);
+        showNotification('创建失败：' + err.message, 'error');
+      }
+    }
+    
+    async function loadTodos() {
+      try {
+        console.log('loadTodos called, currentCharacter:', currentCharacter);
+        if (!currentCharacter || !currentCharacter.id) {
+          console.error('loadTodos: currentCharacter not set');
+          return;
+        }
+        
+        // 检查是否需要升级
+        try {
+          const checkRes = await fetch(API_BASE + '/character/' + currentCharacter.id + '/check-level-up', {method: 'POST'});
+          const checkData = await checkRes.json();
+          console.log('Level check result:', checkData);
+          
+          if (checkData.success && checkData.levelUp) {
+            console.log('Level up! New level:', checkData.newLevel);
+            currentCharacter = checkData.character;
+            showNotification('🎉 升级！Lv.' + checkData.newLevel + '，HP +' + checkData.hpGained, 'success');
+            updateCharacterUI();
+          } else if (checkData.success && checkData.currentExp) {
+            // 更新经验显示
+            currentCharacter.exp = checkData.currentExp;
+            document.getElementById('char-exp').textContent = checkData.currentExp + '/100';
+            if (checkData.currentExp >= 100) {
+              console.log('Exp is >= 100, forcing level check...');
+              // 强制再检查一次（可能有缓存问题）
+              await fetch(API_BASE + '/character/' + currentCharacter.id + '/check-level-up', {method: 'POST'});
+            }
+          }
+        } catch (e) {
+          console.error('Level up check failed:', e);
+        }
+        
+        const res = await fetch(API_BASE + '/todos/' + currentCharacter.id);
+        const data = await res.json();
+        console.log('loadTodos response:', data);
+        if (!data.success) {
+          console.error('loadTodos: API returned false', data);
+          showNotification('加载任务失败', 'error');
+          return;
+        }
+        const list = document.getElementById('todo-list');
+        if (!list) {
+          console.error('loadTodos: todo-list element not found');
+          return;
+        }
+        list.innerHTML = '';
+        data.todos.forEach(todo => {
+          const li = document.createElement('li');
+          li.className = 'todo-item ' + (todo.completed ? 'completed' : '');
+          
+          const difficultyIcon = { easy: '⭐', normal: '⭐⭐', hard: '⭐⭐⭐' };
+          const difficultyText = { easy: '简单', normal: '普通', hard: '困难' };
+          
+          let expText = [];
+          if (todo.str_exp) expText.push('💪+' + todo.str_exp);
+          if (todo.dex_exp) expText.push('🦵+' + todo.dex_exp);
+          if (todo.con_exp) expText.push('❤️+' + todo.con_exp);
+          if (todo.int_exp) expText.push('🧠+' + todo.int_exp);
+          if (todo.wis_exp) expText.push('👁️+' + todo.wis_exp);
+          if (todo.cha_exp) expText.push('✨+' + todo.cha_exp);
+          
+          li.innerHTML = '<div class="todo-info"><h4>' + todo.title + '</h4><div class="exp-bonus">' + (difficultyIcon[todo.difficulty] || '⭐⭐') + ' ' + (difficultyText[todo.difficulty] || '普通') + ' | ' + expText.join(' ') + '</div></div><div class="todo-actions">' + (!todo.completed ? '<button class="btn btn-success btn-small" onclick="completeTodo(' + todo.id + ')">完成</button>' : '✅') + '<button class="btn btn-danger btn-small" onclick="deleteTodo(' + todo.id + ')">删除</button></div>';
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error('loadTodos error:', err);
+        showNotification('加载任务失败：' + err.message, 'error');
+      }
+    }
+    
+    async function completeTodo(id) {
+      try {
+        const res = await fetch(API_BASE + '/todos/' + id + '/complete', {method: 'POST'});
+        const data = await res.json();
+        if (data.success) { 
+          currentCharacter = data.character; 
+          updateCharacterUI(); 
+          loadTodos(); 
+          
+          let msg = '完成！获得 ' + data.expGained + ' 经验';
+          if (data.levelUp) msg += '，升级到 ' + data.newLevel + ' 级！';
+          if (data.hpGained) msg += '，HP +' + data.hpGained;
+          
+          // 显示属性经验获得
+          const attrExp = data.attributeExpGained;
+          let attrMsg = [];
+          if (attrExp.str) attrMsg.push('力量+' + attrExp.str);
+          if (attrExp.dex) attrMsg.push('敏捷+' + attrExp.dex);
+          if (attrExp.con) attrMsg.push('体质+' + attrExp.con);
+          if (attrExp.int) attrMsg.push('智力+' + attrExp.int);
+          if (attrExp.wis) attrMsg.push('感知+' + attrExp.wis);
+          if (attrExp.cha) attrMsg.push('魅力+' + attrExp.cha);
+          
+          if (attrMsg.length > 0) msg += '\n' + attrMsg.join(' ');
+          
+          // 显示属性升级
+          const attrGain = data.attributeGained;
+          let gainMsg = [];
+          if (attrGain.str) gainMsg.push('💪+' + attrGain.str);
+          if (attrGain.dex) gainMsg.push('🦵+' + attrGain.dex);
+          if (attrGain.con) gainMsg.push('❤️+' + attrGain.con);
+          if (attrGain.int) gainMsg.push('🧠+' + attrGain.int);
+          if (attrGain.wis) gainMsg.push('👁️+' + attrGain.wis);
+          if (attrGain.cha) gainMsg.push('✨+' + attrGain.cha);
+          
+          if (gainMsg.length > 0) msg += '\n🎉 属性升级！' + gainMsg.join(' ');
+          
+          showNotification(msg, 'success'); 
+        } else {
+          showNotification(data.message || '完成失败', 'error');
+        }
+      } catch (err) {
+        console.error('completeTodo error:', err);
+        showNotification('完成失败：' + err.message, 'error');
+      }
+    }
+    
+    async function deleteTodo(id) { await fetch(API_BASE + '/todos/' + id, {method: 'DELETE'}); loadTodos(); }
+    
+    async function loadDungeons() {
+      const res = await fetch(API_BASE + '/dungeons');
+      const data = await res.json();
+      const list = document.getElementById('dungeon-list');
+      list.innerHTML = '';
+      data.dungeons.forEach(d => { const div = document.createElement('div'); div.className = 'dungeon-item'; div.innerHTML = '<div class="dungeon-info"><h3>' + d.name + '</h3><div class="level-req">推荐等级: ' + d.recommendedLevel + '</div></div><button class="btn btn-danger" onclick="startAdventure(' + d.level + ')">进入</button>'; list.appendChild(div); });
+    }
+    
+    async function loadEquipment() {
+      const res = await fetch(API_BASE + '/equipment/' + currentCharacter.id);
+      const data = await res.json();
+      const list = document.getElementById('equipment-list');
+      list.innerHTML = '';
+      
+      if (data.equipment.length === 0) {
+        list.innerHTML = '<p style="color: #666; text-align: center;">还没有装备，去地城冒险击败怪物吧！</p>';
+        return;
+      }
+      
+      data.equipment.forEach(eq => {
+        const div = document.createElement('div');
+        div.className = 'equipment-item ' + eq.rarity + (eq.equipped ? ' equipped' : '');
+        
+        const typeIcon = { weapon: '⚔️', armor: '🛡️', accessory: '💍' };
+        const typeName = { weapon: '武器', armor: '护甲', accessory: '饰品' };
+        
+        let bonusText = [];
+        if (eq.bonus_str) bonusText.push('力量+' + eq.bonus_str);
+        if (eq.bonus_dex) bonusText.push('敏捷+' + eq.bonus_dex);
+        if (eq.bonus_con) bonusText.push('体质+' + eq.bonus_con);
+        if (eq.bonus_int) bonusText.push('智力+' + eq.bonus_int);
+        if (eq.bonus_wis) bonusText.push('感知+' + eq.bonus_wis);
+        if (eq.bonus_cha) bonusText.push('魅力+' + eq.bonus_cha);
+        
+        div.innerHTML = '<div class="equipment-info"><h4>' + typeIcon[eq.type] + ' ' + eq.name + '</h4><div class="rarity rarity-' + eq.rarity + '">' + eq.rarity + '</div><div class="bonus">' + bonusText.join(' / ') + '</div></div><div class="equipment-actions">' + (eq.equipped ? '<button class="btn btn-danger btn-small" onclick="equipItem(' + eq.id + ', false)">卸下</button>' : '<button class="btn btn-success btn-small" onclick="equipItem(' + eq.id + ', true)">穿戴</button>') + '<button class="btn btn-danger btn-small" onclick="sellItem(' + eq.id + ')">出售</button></div>';
+        list.appendChild(div);
+      });
+    }
+    
+    async function equipItem(id, equip) {
+      const res = await fetch(API_BASE + '/equipment/' + id + '/equip', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ characterId: currentCharacter.id, equip: equip }) });
+      const data = await res.json();
+      if (data.success) {
+        equipmentBonus = data.bonus || { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+        updateCharacterUI();
+        loadEquipment();
+        showNotification(equip ? '装备已穿戴！' : '装备已卸下！', 'success');
+      }
+    }
+    
+    async function sellItem(id) {
+      if (!confirm('确定要出售这件装备吗？')) return;
+      const res = await fetch(API_BASE + '/equipment/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        currentCharacter.gold += data.price;
+        updateCharacterUI();
+        loadEquipment();
+        showNotification('装备已出售，获得 ' + data.price + ' 金币！', 'success');
+      }
+    }
+    
+    async function startAdventure(level) {
+      if (currentCharacter.hp <= 0) return showNotification('HP不足，无法冒险！先完成任务恢复HP。', 'error');
+      const res = await fetch(API_BASE + '/dungeon/start', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: currentCharacter.id, dungeonLevel: level}) });
+      const data = await res.json();
+      if (!data.success) return showNotification(data.message, 'error');
+
+      currentDungeonRun = data;
+      currentCharacter.hp = data.playerHp;
+      currentCharacter.mp = data.playerMp;
+      updateCharacterUI();
+
+      showDungeonView();
+      showNotification('进入地城！开始探索吧！', 'success');
+    }
+
+    function showDungeonView() {
+      document.getElementById('todos-panel').classList.add('hidden');
+      document.getElementById('dungeons-panel').classList.add('hidden');
+      document.getElementById('equipment-panel').classList.add('hidden');
+      document.getElementById('shop-panel').classList.add('hidden');
+      document.getElementById('adventure-result').classList.add('hidden');
+
+      document.getElementById('dungeon-view').classList.remove('hidden');
+      loadPlayerSkills();
+      updateDungeonUI();
+    }
+
+    function updateDungeonUI() {
+      if (!currentDungeonRun) return;
+
+      const run = currentDungeonRun;
+      const floor = run.floors[run.currentFloor];
+      const totalFloors = run.floors.length;
+
+      document.getElementById('floor-info').textContent = `第 ${run.currentFloor + 1}/${totalFloors} 层`;
+      document.getElementById('room-info').textContent = `房间 ${run.currentRoom + 1}/${floor.length}`;
+
+      // 更新房间列表
+      const roomList = document.getElementById('dungeon-rooms');
+      roomList.innerHTML = '';
+
+      floor.forEach((room, index) => {
+        const div = document.createElement('div');
+        div.className = 'dungeon-room ' + (index === run.currentRoom ? 'current' : '') + ' ' + room.type;
+        div.innerHTML = getRoomIcon(room.type);
+        roomList.appendChild(div);
+      });
+    }
+
+    function getRoomIcon(type) {
+      const icons = {
+        'combat': '⚔️',
+        'treasure': '💎',
+        'trap': '⚠️',
+        'event': '📜',
+        'rest': '🌟',
+        'boss': '👹'
+      };
+      return icons[type] || '❓';
+    }
+
+    async function exploreRoom() {
+      if (!currentDungeonRun) return;
+      const res = await fetch(API_BASE + '/dungeon/explore', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: currentCharacter.id, runId: currentDungeonRun.runId}) });
+      const data = await res.json();
+      if (!data.success) return showNotification(data.message, 'error');
+
+      if (data.type === 'next_floor') {
+        showNotification(data.message, 'info');
+        currentDungeonRun.currentFloor++;
+        currentDungeonRun.currentRoom = 0;
+        updateDungeonUI();
+        return;
+      }
+
+      if (data.type === 'victory') {
+        showNotification('🎉 地城通关！' + data.message, 'success');
+        loadDungeons();
+        document.getElementById('dungeon-view').classList.add('hidden');
+        document.getElementById('dungeons-panel').classList.remove('hidden');
+        currentDungeonRun = null;
+        return;
+      }
+
+      if (data.type === 'defeat') {
+        showNotification('💀 ' + data.message, 'error');
+        loadDungeons();
+        document.getElementById('dungeon-view').classList.add('hidden');
+        document.getElementById('dungeons-panel').classList.remove('hidden');
+        currentDungeonRun = null;
+        return;
+      }
+
+      // 更新角色数据
+      if (data.character) {
+        currentCharacter = data.character;
+        updateCharacterUI();
+      }
+
+      // 显示探索结果
+      showExplorationResult(data);
+
+      // 更新地城状态
+      if (data.type === 'combat' || data.type === 'boss') {
+        currentBattle = data.battle;
+        showBattleView();
+      } else {
+        currentDungeonRun.currentRoom++;
+        updateDungeonUI();
+      }
+    }
+
+    function showExplorationResult(result) {
+      const resultDiv = document.getElementById('exploration-result');
+      resultDiv.innerHTML = '';
+
+      let html = '<div class="result-text">' + result.description + '</div>';
+      if (result.reward && (result.reward.gold || result.reward.heal || result.reward.exp)) {
+        html += '<div class="reward-text">';
+        if (result.reward.gold) html += '<div>💰 +' + result.reward.gold + ' 金币</div>';
+        if (result.reward.heal) html += '<div>❤️ +' + result.reward.heal + ' HP</div>';
+        if (result.reward.exp) html += '<div>✨ +' + result.reward.exp + ' EXP</div>';
+        html += '</div>';
+      }
+      resultDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
+    }
+
+    function showBattleView() {
+      document.getElementById('exploration-result').classList.add('hidden');
+      document.getElementById('battle-view').classList.remove('hidden');
+      updateBattleUI();
+    }
+
+    function updateBattleUI() {
+      if (!currentBattle) return;
+
+      const battle = currentBattle;
+      document.getElementById('battle-monster-name').textContent = battle.monsterName;
+      document.getElementById('battle-monster-hp').textContent = `${battle.monsterHp}/${battle.monsterMaxHp}`;
+      document.getElementById('battle-player-hp').textContent = `${battle.playerHp}/${50}`;
+      document.getElementById('battle-player-mp').textContent = `${battle.playerMp}/${10}`;
+      document.getElementById('battle-turn').textContent = `回合 ${battle.turn}`;
+
+      // 更新技能按钮状态
+      const skillBtns = document.querySelectorAll('.skill-btn');
+      skillBtns.forEach(btn => {
+        const mpCost = parseInt(btn.getAttribute('data-mp') || 0);
+        btn.disabled = battle.playerMp < mpCost;
+      });
+    }
+
+    async function attack() {
+      if (!currentDungeonRun) return;
+      const res = await fetch(API_BASE + '/battle/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: currentCharacter.id, runId: currentDungeonRun.runId, action: 'attack'}) });
+      const data = await res.json();
+      handleBattleResult(data);
+    }
+
+    async function useSkill(skillId, skillName, mpCost) {
+      if (!currentDungeonRun) return;
+      if (currentBattle.playerMp < mpCost) {
+        showNotification('MP不足！', 'error');
+        return;
+      }
+      const res = await fetch(API_BASE + '/battle/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: currentCharacter.id, runId: currentDungeonRun.runId, action: 'skill', skillId: skillId}) });
+      const data = await res.json();
+      handleBattleResult(data);
+    }
+
+    function handleBattleResult(data) {
+      if (!data.success) return showNotification(data.message, 'error');
+
+      const resultDiv = document.getElementById('battle-log');
+      
+      // 累积战斗日志而不是覆盖
+      const newLogEntry = document.createElement('div');
+      newLogEntry.style.marginBottom = '10px';
+      newLogEntry.style.padding = '10px';
+      newLogEntry.style.background = data.type === 'victory' ? 'rgba(46,204,113,0.1)' : 'rgba(231,76,60,0.1)';
+      newLogEntry.style.borderRadius = '8px';
+      // 把 \n 转换为 <br>
+      newLogEntry.innerHTML = data.description.replace(/\n/g, '<br>');
+      
+      resultDiv.appendChild(newLogEntry);
+      resultDiv.scrollTop = resultDiv.scrollHeight;
+
+      if (data.type === 'victory') {
+        showNotification('战斗胜利！', 'success');
+        currentBattle = null;
+        document.getElementById('battle-view').classList.add('hidden');
+        document.getElementById('dungeon-view').classList.remove('hidden');
+        currentDungeonRun.currentRoom++;
+        updateDungeonUI();
+        return;
+      }
+
+      if (data.type === 'defeat') {
+        showNotification('💀 战斗失败！', 'error');
+        loadDungeons();
+        document.getElementById('battle-view').classList.add('hidden');
+        document.getElementById('dungeon-view').classList.add('hidden');
+        document.getElementById('dungeons-panel').classList.remove('hidden');
+        currentDungeonRun = null;
+        return;
+      }
+
+      if (data.battle) {
+        currentBattle = data.battle;
+        if (data.character) {
+          currentCharacter = data.character;
+          updateCharacterUI();
+        }
+        updateBattleUI();
+      }
+    }
+
+    function exitDungeon() {
+      currentDungeonRun = null;
+      currentBattle = null;
+      document.getElementById('dungeon-view').classList.add('hidden');
+      document.getElementById('battle-view').classList.add('hidden');
+      document.getElementById('exploration-result').classList.add('hidden');
+      document.getElementById('dungeons-panel').classList.remove('hidden');
+    }
+
+    async function loadPlayerSkills() {
+      const res = await fetch(API_BASE + '/player-skills/' + currentCharacter.id);
+      const data = await res.json();
+      if (!data.success) return;
+      playerSkills = data.skills;
+      renderSkillButtons();
+    }
+
+    function renderSkillButtons() {
+      const container = document.getElementById('skill-buttons');
+      container.innerHTML = '';
+
+      const activeSkills = playerSkills.filter(s => s.type === 'active');
+      activeSkills.forEach(skill => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-small skill-btn';
+        btn.textContent = `${skill.display_name} (${skill.mp_cost} MP)`;
+        btn.setAttribute('data-mp', skill.mp_cost);
+        btn.onclick = () => useSkill(skill.skill_id, skill.display_name, skill.mp_cost);
+        container.appendChild(btn);
+      });
+
+      const passiveSkills = playerSkills.filter(s => s.type === 'passive');
+      if (passiveSkills.length > 0) {
+        const div = document.createElement('div');
+        div.style.marginTop = '10px';
+        div.style.color = '#888';
+        div.textContent = '被动技能: ' + passiveSkills.map(s => s.display_name).join(', ');
+        container.appendChild(div);
+      }
+    }
+    
+    async function loadShop() {
+      const res = await fetch(API_BASE + '/shop');
+      const data = await res.json();
+      const list = document.getElementById('shop-list');
+      list.innerHTML = '';
+      
+      if (!data.items || data.items.length === 0) {
+        list.innerHTML = '<p style="color: #666; text-align: center;">商店暂无物品</p>';
+        return;
+      }
+      
+      const typeIcon = { potion: '🧪', weapon: '⚔️', armor: '🛡️', accessory: '💍' };
+      
+      data.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'shop-item ' + item.type;
+        
+        div.innerHTML = '<div class="shop-info"><h4>' + typeIcon[item.type] + ' ' + item.name + '</h4><div class="desc">' + (item.description || '') + '</div><div class="price">💰 ' + item.price + '</div></div><button class="btn btn-primary btn-small" onclick="buyItem(' + item.id + ')">购买</button>';
+        list.appendChild(div);
+      });
+    }
+    
+    async function buyItem(itemId) {
+      const res = await fetch(API_BASE + '/shop/buy', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ characterId: currentCharacter.id, itemId: itemId }) });
+      const data = await res.json();
+      
+      if (data.success) {
+        // 更新角色信息
+        const charRes = await fetch(API_BASE + '/character/' + currentCharacter.id);
+        const charData = await charRes.json();
+        if (charData.success) {
+          currentCharacter = charData.character;
+          updateCharacterUI();
+        }
+        
+        if (data.item) {
+          loadEquipment();
+        }
+        
+        showNotification(data.message, 'success');
+      } else {
+        showNotification(data.message, 'error');
+      }
+    }
+    
+    function closeAdventureResult() { document.getElementById('adventure-result').classList.add('hidden'); document.getElementById('todos-panel').classList.remove('hidden'); loadEquipment(); }
+    function logout() { localStorage.removeItem('characterId'); location.reload(); }
+    
+    // ==================== 组队系统 ====================
+    
+    let currentParty = null;
+    
+    async function loadParty() {
+      if (!currentCharacter || !currentCharacter.id) return;
+      
+      const charRes = await fetch(API_BASE + '/character/' + currentCharacter.id);
+      const charData = await charRes.json();
+      
+      if (!charData.success || !charData.character) return;
+      
+      const userId = charData.character.user_id;
+      
+      const partyRes = await fetch(API_BASE + '/parties/user/' + userId);
+      const partyData = await partyRes.json();
+      
+      const myPartyDiv = document.getElementById('my-party');
+      const createPartyGroup = document.getElementById('create-party-group');
+      const leavePartyBtn = document.getElementById('leave-party-btn');
+      const membersList = document.getElementById('party-members');
+      
+      membersList.innerHTML = '';
+      
+      if (partyData.success && partyData.party) {
+        currentParty = partyData.party;
+        const party = partyData.party;
+        
+        myPartyDiv.innerHTML = '<div style="text-align: center; color: #888; margin-bottom: 10px;"><div style="font-size: 2em;">👥</div><div style="font-weight: bold; color: #f39c12;">' + party.party_name + '</div><div>队长：' + party.leader_username + '</div><div>队伍ID：' + party.party_id + '</div></div>';
+        
+        myPartyDiv.classList.remove('hidden');
+        createPartyGroup.classList.add('hidden');
+        leavePartyBtn.classList.remove('hidden');
+        leavePartyBtn.textContent = party.leader_id === userId ? '解散队伍' : '离队';
+        
+        const membersRes = await fetch(API_BASE + '/parties/' + party.party_id);
+        const membersData = await membersRes.json();
+        
+        if (membersData.success && membersData.members) {
+          membersData.members.forEach(member => {
+            const li = document.createElement('li');
+            li.style.padding = '10px';
+            li.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            li.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center;"><div><div style="font-weight: bold; color: ' + (party.leader_id === member.user_id ? '#f39c12' : '#fff') + ';">' + member.username + '</div><div style="color: #888; font-size: 0.9em;">' + (member.character_name || '无角色') + ' - Lv.' + (member.level || 1) + '</div></div></div>';
+            membersList.appendChild(li);
+          });
+        }
+      } else {
+        currentParty = null;
+        myPartyDiv.classList.add('hidden');
+        createPartyGroup.classList.remove('hidden');
+        leavePartyBtn.classList.add('hidden');
+        membersList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">你还没有加入队伍</p>';
+      }
+    }
+    
+    async function createParty() {
+      const partyName = document.getElementById('party-name').value.trim();
+      if (!partyName) return showNotification('请输入队伍名称', 'error');
+      
+      const charRes = await fetch(API_BASE + '/character/' + currentCharacter.id);
+      const charData = await charRes.json();
+      
+      if (!charData.success || !charData.character) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/parties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: charData.character.user_id,
+            characterId: currentCharacter.id,
+            partyName: partyName
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('party-name').value = '';
+          showNotification(data.message || '队伍创建成功', 'success');
+          loadParty();
+        } else if (data.currentParty) {
+          showNotification(data.message || '你已经在队伍中了', 'error');
+          loadParty();
+        } else {
+          showNotification(data.message || '创建失败', 'error');
+        }
+      } catch (err) {
+        console.error('Create party error:', err);
+        showNotification('创建失败：' + err.message, 'error');
+      }
+    }
+    
+    async function joinParty() {
+      const partyCode = document.getElementById('party-code').value.trim();
+      if (!partyCode) return showNotification('请输入队伍ID', 'error');
+      
+      const charRes = await fetch(API_BASE + '/character/' + currentCharacter.id);
+      const charData = await charRes.json();
+      
+      if (!charData.success || !charData.character) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/parties/' + partyCode + '/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: charData.character.user_id,
+            characterId: currentCharacter.id
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('party-code').value = '';
+          showNotification(data.message || '成功加入队伍', 'success');
+          loadParty();
+        } else {
+          showNotification(data.message || '加入失败', 'error');
+        }
+      } catch (err) {
+        console.error('Join party error:', err);
+        showNotification('加入失败：' + err.message, 'error');
+      }
+    }
+    
+    async function leaveParty() {
+      if (!currentParty) return;
+      
+      // 先获取角色数据
+      const charRes = await fetch(API_BASE + '/character/' + currentCharacter.id);
+      const charData = await charRes.json();
+      
+      if (!charData.success || !charData.character) return;
+      
+      const action = confirm('确定要' + (currentParty.leader_id === charData.character.user_id ? '解散队伍' : '离队') + '吗？');
+      if (!action) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/parties/' + currentParty.party_id + '/leave', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: charData.character.user_id })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showNotification(data.message || '操作成功', 'success');
+          loadParty();
+        } else {
+          showNotification(data.message || '操作失败', 'error');
+        }
+      } catch (err) {
+        console.error('Leave party error:', err);
+        showNotification('操作失败：' + err.message, 'error');
+      }
+    }
+    
+    async function checkLogin() {
+      const charId = localStorage.getItem('characterId');
+      if (charId) { 
+        const res = await fetch(API_BASE + '/character/' + charId); 
+        const data = await res.json(); 
+        if (data.success) { 
+          currentCharacter = data.character; 
+          showGame(); 
+          loadTodos(); 
+          loadDungeons(); 
+          loadEquipment();
+          
+          // 获取装备加成
+          const eqRes = await fetch(API_BASE + '/equipment/' + charId);
+          const eqData = await eqRes.json();
+          if (eqData.success && eqData.equipment) {
+            equipmentBonus = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
+            eqData.equipment.filter(e => e.equipped).forEach(e => {
+              equipmentBonus.str += e.bonus_str || 0;
+              equipmentBonus.dex += e.bonus_dex || 0;
+              equipmentBonus.con += e.bonus_con || 0;
+              equipmentBonus.int += e.bonus_int || 0;
+              equipmentBonus.wis += e.bonus_wis || 0;
+              equipmentBonus.cha += e.bonus_cha || 0;
+            });
+          }
+          return; 
+        } 
+      }
+    }
+    checkLogin();
+  </script>
+</body>
+</html>

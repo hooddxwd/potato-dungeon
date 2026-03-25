@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban Board - 实时任务看板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header h1 {
+      color: white;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .header p {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.1em;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .column {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      min-height: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .column-header {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .column-header .count {
+      background: #333;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+    }
+
+    .todo .column-header {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+
+    .progress .column-header {
+      border-color: #3498db;
+      color: #3498db;
+    }
+
+    .done .column-header {
+      border-color: #27ae60;
+      color: #27ae60;
+    }
+
+    .task-list {
+      min-height: 400px;
+    }
+
+    .task {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid;
+      cursor: grab;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .task:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .task .title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2c3e50;
+      font-size: 1.05em;
+    }
+
+    .task .description {
+      color: #7f8c8d;
+      font-size: 0.95em;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .task .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85em;
+      color: #95a5a6;
+    }
+
+    .task .meta .author {
+      font-weight: bold;
+    }
+
+    .task .meta .time {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .task .meta .actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .task .actions button {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.8em;
+      transition: all 0.2s;
+    }
+
+    .task .actions button:hover {
+      background: #e9ecef;
+      border-color: #ccc;
+    }
+
+    .task .actions button.btn-danger:hover {
+      background: #fee;
+      border-color: #fcc;
+      color: #c0392b;
+    }
+
+    .task.todo {
+      border-left-color: #f59e0b;
+    }
+
+    .task.progress {
+      border-left-color: #3498db;
+    }
+
+    .task.done {
+      border-left-color: #27ae60;
+      opacity: 0.7;
+    }
+
+    .task.done .title {
+      text-decoration: line-through;
+      color: #95a5a6;
+    }
+
+    .add-task {
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: auto;
+    }
+
+    .add-task:hover {
+      background: rgba(255, 255, 255, 1);
+      border-color: #3498db;
+      color: #3498db;
+    }
+
+    .add-task .icon {
+      font-size: 2em;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-indicator.online {
+      background: #27ae60;
+      box-shadow: 0 0 10px #27ae60;
+    }
+
+    .status-indicator.syncing {
+      background: #f39c12;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 900px) {
+      .board {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 看板</h1>
+      <p>
+        <span class="status-indicator online"></span>
+        <span id="status-text">在线</span> | 
+        最后更新：<span id="last-update">--</span>
+      </p>
+    </div>
+
+    <div class="board">
+      <!-- To Do 列 -->
+      <div class="column todo">
+        <div class="column-header">
+          📝 To Do <span class="count" id="todo-count">0</span>
+        </div>
+        <div class="task-list" id="todo-list"></div>
+        <div class="add-task" onclick="openTaskModal('todo')">
+          <div class="icon">＋</div>
+        </div>
+      </div>
+
+      <!-- In Progress 列 -->
+      <div class="column progress">
+        <div class="column-header">
+          🔄 In Progress <span class="count" id="progress-count">0</span>
+        </div>
+        <div class="task-list" id="progress-list"></div>
+        <div class="add-task" onclick="openTaskModal('progress')">
+          <div class="icon">＋</div>
+        </div>
+      </div>
+
+      <!-- Done 列 -->
+      <div class="column done">
+        <div class="column-header">
+          ✅ Done <span class="count" id="done-count">0</span>
+        </div>
+        <div class="task-list" id="done-list"></div>
+        <div class="add-task" onclick="openTaskModal('done')">
+          <div class="icon">＋</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加任务弹窗 -->
+  <div id="task-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2 id="modal-title">添加任务</h2>
+      <form id="task-form" onsubmit="addTask(event)">
+        <div class="form-group">
+          <label>任务标题</label>
+          <input type="text" id="task-title" required placeholder="输入任务标题...">
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <textarea id="task-description" rows="3" placeholder="任务详细描述..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>负责人</label>
+          <input type="text" id="task-assignee" placeholder="谁负责这个任务？">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" onclick="closeTaskModal()">取消</button>
+          <button type="submit" class="btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1em;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .form-actions button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel {
+      background: #f8f9fa;
+      color: #2c3e50;
+    }
+
+    .btn-cancel:hover {
+      background: #e9ecef;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2980b9;
+    }
+  </style>
+
+  <script>
+    const API_BASE = 'http://129.226.204.202:10002/api';
+    let tasks = [];
+    let currentUser = localStorage.getItem('kanbanUser') || '用户' + Math.floor(Math.random() * 1000);
+    
+    // 初始化用户
+    localStorage.setItem('kanbanUser', currentUser);
+
+    // 从API加载任务
+    async function loadTasks() {
+      try {
+        const res = await fetch(API_BASE + '/tasks');
+        const data = await res.json();
+        if (data.success) {
+          tasks = data.tasks;
+          renderTasks();
+          updateLastUpdateTime();
+        }
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+      }
+    }
+
+    // 渲染所有任务
+    function renderTasks() {
+      const todoList = document.getElementById('todo-list');
+      const progressList = document.getElementById('progress-list');
+      const doneList = document.getElementById('done-list');
+
+      todoList.innerHTML = '';
+      progressList.innerHTML = '';
+      doneList.innerHTML = '';
+
+      tasks.forEach(task => {
+        const taskElement = createTaskElement(task);
+        if (task.status === 'todo') {
+          todoList.appendChild(taskElement);
+        } else if (task.status === 'progress') {
+          progressList.appendChild(taskElement);
+        } else if (task.status === 'done') {
+          doneList.appendChild(taskElement);
+        }
+      });
+
+      updateCounts();
+    }
+
+    // 创建任务元素
+    function createTaskElement(task) {
+      const div = document.createElement('div');
+      div.className = `task ${task.status}`;
+      div.innerHTML = `
+        <div class="title">${escapeHtml(task.title)}</div>
+        ${task.description ? `<div class="description">${escapeHtml(task.description)}</div>` : ''}
+        <div class="meta">
+          <span class="author">${escapeHtml(task.assignee || '未分配')}</span>
+          <span class="time">${formatTime(task.createdAt)}</span>
+        </div>
+        <div class="actions">
+          ${task.status !== 'todo' ? `<button onclick="moveTask(${task.id}, '${task.status === 'progress' ? 'todo' : 'progress'}')">← 左移</button>` : ''}
+          ${task.status !== 'done' ? `<button onclick="moveTask(${task.id}, '${task.status === 'done' ? 'progress' : 'done'}')">右移 →</button>` : ''}
+          ${task.status === 'done' ? `<button onclick="moveTask(${task.id}, 'progress')">← 重新打开</button>` : ''}
+          <button class="btn-danger" onclick="deleteTask(${task.id})">🗑️</button>
+        </div>
+      `;
+      return div;
+    }
+
+    // 添加任务
+    async function addTask(event) {
+      event.preventDefault();
+      
+      const title = document.getElementById('task-title').value.trim();
+      const description = document.getElementById('task-description').value.trim();
+      const assignee = document.getElementById('task-assignee').value.trim();
+      const status = document.getElementById('task-modal-status').value;
+
+      if (!title) return;
+
+      showSyncing();
+
+      try {
+        const res = await fetch(API_BASE + '/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            title, 
+            description,
+            assignee,
+            status,
+            createdBy: currentUser 
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          await loadTasks();
+          closeTaskModal();
+          showOnline();
+        }
+      } catch (err) {
+        console.error('Failed to add task:', err);
+        showOnline();
+      }
+    }
+
+    // 移动任务状态
+    async function moveTask(taskId, newStatus) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.status !== newStatus) {
+        showSyncing();
+        
+        try {
+          const res = await fetch(API_BASE + '/tasks/' + taskId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+          });
+          const data = await res.json();
+          
+          if (data.success) {
+            await loadTasks();
+            showOnline();
+          }
+        } catch (err) {
+          console.error('Failed to move task:', err);
+          showOnline();
+        }
+      }
+    }
+
+    // 删除任务
+    async function deleteTask(taskId) {
+      if (!confirm('确定要删除这个任务吗？')) return;
+      
+      showSyncing();
+      
+      try {
+        const res = await fetch(API_BASE + '/tasks/' + taskId, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          await loadTasks();
+          showOnline();
+        }
+      } catch (err) {
+        console.error('Failed to delete task:', err);
+        showOnline();
+      }
+    }
+
+    // 更新计数
+    function updateCounts() {
+      document.getElementById('todo-count').textContent = tasks.filter(t => t.status === 'todo').length;
+      document.getElementById('progress-count').textContent = tasks.filter(t => t.status === 'progress').length;
+      document.getElementById('done-count').textContent = tasks.filter(t => t.status === 'done').length;
+    }
+
+    // 更新最后更新时间
+    function updateLastUpdateTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('zh-CN');
+      document.getElementById('last-update').textContent = timeStr;
+    }
+
+    // 显示同步中状态
+    function showSyncing() {
+      const indicator = document.querySelector('.status-indicator');
+      indicator.className = 'status-indicator syncing';
+      document.getElementById('status-text').textContent = '同步中...';
+    }
+
+    // 显示在线状态
+    function showOnline() {
+      const indicator = document.querySelector('.status-indicator');
+      indicator.className = 'status-indicator online';
+      document.getElementById('status-text').textContent = '在线';
+    }
+
+    // 打开任务弹窗
+    function openTaskModal(status) {
+      document.getElementById('task-modal-status').value = status;
+      const titles = {
+        'todo': '添加任务到 To Do',
+        'progress': '添加任务到 In Progress',
+        'done': '添加任务到 Done'
+      };
+      document.getElementById('modal-title').textContent = titles[status];
+      document.getElementById('task-modal').style.display = 'flex';
+    }
+
+    // 关闭任务弹窗
+    function closeTaskModal() {
+      document.getElementById('task-modal').style.display = 'none';
+      document.getElementById('task-form').reset();
+    }
+
+    // 格式化时间
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleString('zh-CN', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 自动同步（定期从服务器获取更新）
+    function startRealtimeSync() {
+      setInterval(async () => {
+        await loadTasks();
+      }, 2000); // 每2秒检查一次更新
+    }
+
+    // 初始化
+    window.onload = function() {
+      loadTasks();
+      startRealtimeSync();
+    };
+
+    // 点击模态框外部关闭
+    document.getElementById('task-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeTaskModal();
+      }
+    });
+  </script>
+</body>
+</html>
