@@ -10,21 +10,33 @@ const WS_PORT = 10003;
 app.use(cors());
 app.use(express.json());
 
+// 数据库配置 - 使用专用用户
 const pool = mysql.createPool({
   host: 'localhost',
-  user: 'root',
-  password: '',
+  user: 'potato_user',           // 使用专用用户
+  password: 'potato_password_123', // 数据库密码
   database: 'potato_dungeon',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
+// 备用配置：如果使用 root 用户，请取消注释并填入密码
+// const pool = mysql.createPool({
+//   host: 'localhost',
+//   user: 'root',
+//   password: 'YOUR_ROOT_PASSWORD_HERE', // 在这里填入你的 root 密码
+//   database: 'potato_dungeon',
+//   waitForConnections: true,
+//   connectionLimit: 10,
+//   queueLimit: 0
+// });
+
 async function initDatabase() {
   const connection = await pool.getConnection();
   try {
     await connection.query(`CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY AUTO_INCREMENT, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(255) NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
-    await connection.query(`CREATE TABLE IF NOT EXISTS characters (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, name VARCHAR(50) NOT NULL, level INT DEFAULT 1, exp INT DEFAULT 0, hp INT DEFAULT 30, max_hp INT DEFAULT 30, gold INT DEFAULT 0, stamina INT DEFAULT 10, max_stamina INT DEFAULT 10, last_stamina_recover DATETIME DEFAULT CURRENT_TIMESTAMP, str INT DEFAULT 10, dex INT DEFAULT 10, con INT DEFAULT 10, int_score INT DEFAULT 10, wis INT DEFAULT 10, cha INT DEFAULT 10, str_exp INT DEFAULT 0, dex_exp INT DEFAULT 0, con_exp INT DEFAULT 0, int_exp INT DEFAULT 0, wis_exp INT DEFAULT 0, cha_exp INT DEFAULT 0, profession_id INT DEFAULT NULL, mp INT DEFAULT 20, max_mp INT DEFAULT 20, skill_points INT DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id))`);
+    await connection.query(`CREATE TABLE IF NOT EXISTS characters (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT NOT NULL, name VARCHAR(50) NOT NULL, level INT DEFAULT 1, exp INT DEFAULT 0, hp INT DEFAULT 30, max_hp INT DEFAULT 30, gold INT DEFAULT 0, stamina INT DEFAULT 10, max_stamina INT DEFAULT 10, last_stamina_recover DATETIME DEFAULT CURRENT_TIMESTAMP, str INT DEFAULT 10, dex INT DEFAULT 10, con INT DEFAULT 10, int_score INT DEFAULT 10, wis INT DEFAULT 10, cha INT DEFAULT 10, str_exp INT DEFAULT 0, dex_exp INT DEFAULT 0, con_exp INT DEFAULT 0, int_exp INT DEFAULT 0, wis_exp INT DEFAULT 0, cha_exp INT DEFAULT 0, profession_id INT DEFAULT NULL, mp INT DEFAULT 20, max_mp INT DEFAULT 20, skill_points INT DEFAULT 0, battle_style VARCHAR(20) DEFAULT 'balanced', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES users(id))`);
     await connection.query(`CREATE TABLE IF NOT EXISTS equipment (id INT PRIMARY KEY AUTO_INCREMENT, character_id INT NOT NULL, name VARCHAR(100) NOT NULL, type VARCHAR(50) NOT NULL, rarity VARCHAR(20) DEFAULT 'common', bonus_str INT DEFAULT 0, bonus_dex INT DEFAULT 0, bonus_con INT DEFAULT 0, bonus_int INT DEFAULT 0, bonus_wis INT DEFAULT 0, bonus_cha INT DEFAULT 0, equipped INT DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (character_id) REFERENCES characters(id))`);
     await connection.query(`CREATE TABLE IF NOT EXISTS todos (id INT PRIMARY KEY AUTO_INCREMENT, character_id INT NOT NULL, title VARCHAR(200) NOT NULL, description TEXT, difficulty VARCHAR(10) DEFAULT 'normal', str_exp INT DEFAULT 0, dex_exp INT DEFAULT 0, con_exp INT DEFAULT 0, int_exp INT DEFAULT 0, wis_exp INT DEFAULT 0, cha_exp INT DEFAULT 0, completed INT DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, completed_at DATETIME, FOREIGN KEY (character_id) REFERENCES characters(id))`);
     await connection.query(`CREATE TABLE IF NOT EXISTS adventures (id INT PRIMARY KEY AUTO_INCREMENT, character_id INT NOT NULL, dungeon_level INT NOT NULL, result VARCHAR(50), gold_earned INT DEFAULT 0, exp_earned INT DEFAULT 0, equipment_earned TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (character_id) REFERENCES characters(id))`);
@@ -116,6 +128,235 @@ const DUNGEONS = {
 
 function getMod(score) { return Math.floor((score - 10) / 2); }
 function abilityCheck(abilityScore, difficulty = 10) { const mod = getMod(abilityScore); const roll = Math.floor(Math.random() * 20) + 1; return roll + mod >= difficulty; }
+
+// ==================== 自动战斗系统 ====================
+
+/**
+ * 自动战斗系统
+ * @param {Object} character - 角色属性
+ * @param {Object} monster - 怪物属性
+ * @param {string} battleStyle - 战斗风格: 'aggressive'(激进), 'balanced'(平衡), 'defensive'(保守)
+ * @returns {Object} 战斗结果
+ */
+function autoBattle(character, monster, battleStyle = 'balanced') {
+  const logs = [];
+  let playerHp = character.hp;
+  const playerMaxHp = character.max_hp;
+  let playerMp = character.mp;
+  let monsterHp = monster.hp;
+  const monsterMaxHp = monster.hp;
+
+  // 计算玩家属性（含装备加成）
+  const playerStr = character.str + (character.bonus_str || 0);
+  const playerDex = character.dex + (character.bonus_dex || 0);
+  const playerCon = character.con + (character.bonus_con || 0);
+  const playerInt = character.int_score + (character.bonus_int || 0);
+  const playerWis = character.wis + (character.bonus_wis || 0);
+
+  // 战斗风格参数
+  const styleParams = {
+    aggressive: { attackBonus: 2, defensePenalty: 1, skillChance: 0.7, fleeThreshold: 0.1 },
+    balanced: { attackBonus: 0, defensePenalty: 0, skillChance: 0.5, fleeThreshold: 0.2 },
+    defensive: { attackBonus: -1, defenseBonus: 2, skillChance: 0.3, healChance: 0.4, fleeThreshold: 0.3 }
+  };
+
+  const style = styleParams[battleStyle] || styleParams.balanced;
+  let turn = 1;
+  const maxTurns = 50; // 防止无限循环
+
+  while (playerHp > 0 && monsterHp > 0 && turn <= maxTurns) {
+    logs.push(`\n=== 第 ${turn} 回合 ===`);
+
+    // 检查是否应该逃跑
+    const hpPercent = playerHp / playerMaxHp;
+    if (hpPercent < style.fleeThreshold && Math.random() < 0.3) {
+      const fleeRoll = Math.random();
+      const fleeBonus = (playerDex - 10) / 20; // 敏捷影响逃跑成功率
+      if (fleeRoll + fleeBonus > 0.5) {
+        logs.push(`🏃 玩家尝试逃跑... 成功！`);
+        return {
+          result: 'flee',
+          logs,
+          remainingHp: playerHp,
+          remainingMp: playerMp,
+          turns: turn
+        };
+      } else {
+        logs.push(`🏃 玩家尝试逃跑... 失败！`);
+      }
+    }
+
+    // 玩家行动
+    const playerAction = decidePlayerAction(character, monster, playerHp, playerMp, style, logs);
+    const playerResult = executePlayerAction(
+      playerAction,
+      { str: playerStr, dex: playerDex, int: playerInt, wis: playerWis, con: playerCon },
+      monster,
+      playerHp,
+      playerMp,
+      style,
+      logs
+    );
+
+    playerHp = playerResult.newHp;
+    playerMp = playerResult.newMp;
+    monsterHp = playerResult.monsterHp;
+
+    if (monsterHp <= 0) {
+      logs.push(`\n🎉 战斗胜利！击败了 ${monster.name}！`);
+      break;
+    }
+
+    // 怪物行动
+    const monsterDamage = calculateMonsterDamage(monster, character, style.defenseBonus || 0);
+    playerHp -= monsterDamage;
+    logs.push(`👹 ${monster.name} 攻击！造成 ${monsterDamage} 点伤害`);
+
+    if (playerHp <= 0) {
+      logs.push(`\n💀 战斗失败！被 ${monster.name} 击败...`);
+      break;
+    }
+
+    turn++;
+  }
+
+  // 计算奖励
+  if (playerHp > 0) {
+    const expGain = monster.exp;
+    const goldGain = monster.gold + Math.floor(Math.random() * 10);
+    const critRoll = Math.random();
+    const isCrit = critRoll < 0.05 + (playerWis >= 15 ? 0.05 : 0); // 感知影响暴击率
+
+    return {
+      result: 'victory',
+      logs,
+      remainingHp: Math.max(0, playerHp),
+      remainingMp: Math.max(0, playerMp),
+      turns: turn,
+      rewards: {
+        exp: isCrit ? Math.floor(expGain * 1.5) : expGain,
+        gold: isCrit ? Math.floor(goldGain * 1.5) : goldGain,
+        isCrit
+      }
+    };
+  } else {
+    return {
+      result: 'defeat',
+      logs,
+      remainingHp: 0,
+      remainingMp: Math.max(0, playerMp),
+      turns: turn
+    };
+  }
+}
+
+/**
+ * 决定玩家行动
+ */
+function decidePlayerAction(character, monster, playerHp, playerMp, style, logs) {
+  const hpPercent = playerHp / character.max_hp;
+  const mpPercent = playerMp / character.max_mp;
+
+  // 保守风格：HP低时优先治疗
+  if (style.healChance && hpPercent < 0.4 && mpPercent > 0.3) {
+    if (Math.random() < style.healChance) {
+      return 'heal';
+    }
+  }
+
+  // 激进风格：优先使用技能
+  if (style.skillChance > 0.5 && mpPercent > 0.2 && Math.random() < style.skillChance) {
+    return 'skill';
+  }
+
+  // 平衡风格：根据MP情况决定
+  if (mpPercent > 0.3 && Math.random() < 0.5) {
+    return 'skill';
+  }
+
+  // 默认：普通攻击
+  return 'attack';
+}
+
+/**
+ * 执行玩家行动
+ */
+function executePlayerAction(action, playerStats, monster, playerHp, playerMp, style, logs) {
+  let newHp = playerHp;
+  let newMp = playerMp;
+  let monsterHp = monster.hp;
+  let damage = 0;
+
+  switch (action) {
+    case 'attack':
+      // 物理攻击
+      const strMod = getMod(playerStats.str);
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const attackRoll = roll + strMod + (style.attackBonus || 0);
+      const isCrit = roll === 20 || (roll >= 18 && playerStats.wis >= 15);
+
+      damage = Math.max(1, strMod + 3 + (isCrit ? 5 : 0));
+      damage += style.attackBonus || 0;
+
+      monsterHp -= damage;
+      logs.push(`⚔️ 玩家攻击！掷骰 ${roll}${roll === 20 ? ' (暴击!)' : ''}，造成 ${damage} 点伤害`);
+      break;
+
+    case 'skill':
+      // 魔法技能（消耗MP）
+      if (newMp >= 5) {
+        const intMod = getMod(playerStats.int);
+        const skillDamage = Math.max(3, intMod + 5 + Math.floor(Math.random() * 6));
+        newMp -= 5;
+        monsterHp -= skillDamage;
+        logs.push(`✨ 玩家使用魔法！消耗 5 MP，造成 ${skillDamage} 点伤害`);
+      } else {
+        // MP不足，改为普通攻击
+        const strMod = getMod(playerStats.str);
+        damage = Math.max(1, strMod + 2);
+        monsterHp -= damage;
+        logs.push(`⚔️ MP不足！玩家普通攻击，造成 ${damage} 点伤害`);
+      }
+      break;
+
+    case 'heal':
+      // 治疗（消耗MP）
+      if (newMp >= 8) {
+        const wisMod = getMod(playerStats.wis);
+        const healAmount = Math.max(5, wisMod + 10 + Math.floor(Math.random() * 6));
+        newMp -= 8;
+        newHp = Math.min(newHp + healAmount, 1000); // 假设最大HP上限
+        logs.push(`💚 玩家使用治疗！消耗 8 MP，恢复 ${healAmount} HP`);
+      } else {
+        // MP不足，改为普通攻击
+        const strMod = getMod(playerStats.str);
+        damage = Math.max(1, strMod + 2);
+        monsterHp -= damage;
+        logs.push(`⚔️ MP不足！玩家普通攻击，造成 ${damage} 点伤害`);
+      }
+      break;
+
+    case 'defend':
+      // 防御姿态
+      logs.push(`🛡️ 玩家采取防御姿态！下回合伤害减半`);
+      break;
+  }
+
+  return { newHp, newMp, monsterHp };
+}
+
+/**
+ * 计算怪物伤害
+ */
+function calculateMonsterDamage(monster, character, playerDefenseBonus = 0) {
+  const baseDamage = Math.max(1, monster.atk - 3);
+  const roll = Math.floor(Math.random() * 6) + 1;
+  const conMod = getMod(character.con);
+  const defenseBonus = playerDefenseBonus + conMod;
+
+  let damage = Math.max(1, baseDamage + roll - defenseBonus);
+  return damage;
+}
 
 const EQUIP_TEMPLATES = {
   weapon: [{name:"Iron Sword",rarity:"common",bonus_str:2},{name:"Steel Sword",rarity:"uncommon",bonus_str:3,bonus_dex:1},{name:"Magic Sword",rarity:"rare",bonus_str:4,bonus_int:2},{name:"Legendary Blade",rarity:"epic",bonus_str:6,bonus_dex:3}],
@@ -442,23 +683,36 @@ app.post('/api/dungeon/start', async (req, res) => {
   }
 });
 
-// 探索房间
+// 探索房间（自动战斗版本）
 app.post('/api/dungeon/explore', async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    const { characterId, runId } = req.body;
+    const { characterId, runId, battleStyle: requestedBattleStyle } = req.body;
 
-    // 获取角色信息
-    const [chars] = await conn.execute('SELECT * FROM characters WHERE id=?', [characterId]);
+    // 获取角色信息（包含装备加成）
+    const [chars] = await conn.execute(`
+      SELECT c.*,
+        COALESCE(SUM(e.bonus_str), 0) as bonus_str,
+        COALESCE(SUM(e.bonus_dex), 0) as bonus_dex,
+        COALESCE(SUM(e.bonus_con), 0) as bonus_con,
+        COALESCE(SUM(e.bonus_int), 0) as bonus_int,
+        COALESCE(SUM(e.bonus_wis), 0) as bonus_wis,
+        COALESCE(SUM(e.bonus_cha), 0) as bonus_cha
+      FROM characters c
+      LEFT JOIN equipment e ON c.id = e.character_id AND e.equipped = 1
+      WHERE c.id = ?
+      GROUP BY c.id
+    `, [characterId]);
     if (chars.length === 0) return res.json({ success: false, message: 'Character not found' });
     const ch = chars[0];
+
+    // 使用请求中的战斗风格，或使用角色保存的设置
+    const battleStyle = requestedBattleStyle || ch.battle_style || 'balanced';
 
     // 获取地城运行状态
     const [runs] = await conn.execute('SELECT * FROM dungeon_runs WHERE id=? AND character_id=?', [runId, characterId]);
     if (runs.length === 0) return res.json({ success: false, message: 'Dungeon run not found' });
     const run = runs[0];
-
-    if (run.in_battle) return res.json({ success: false, message: 'In battle, use combat API' });
 
     const floors = typeof run.floors === 'string' ? JSON.parse(run.floors) : run.floors;
     const currentFloor = floors[run.current_floor];
@@ -488,29 +742,81 @@ app.post('/api/dungeon/explore', async (req, res) => {
     let result = { type: room.type, description: '', reward: {} };
 
     if (room.type === 'combat' || room.type === 'boss') {
-      // 触发战斗
+      // 自动战斗系统
       const mid = room.type === 'boss' ? dungeon.monsters[dungeon.monsters.length - 1] : dungeon.monsters[Math.floor(Math.random() * dungeon.monsters.length)];
       const monster = MONSTERS[mid];
 
-      const battleData = {
-        monsterId: mid,
-        monsterName: monster.name,
-        monsterMaxHp: monster.hp,
-        monsterHp: monster.hp,
-        monsterAtk: monster.atk,
-        turn: 1,
-        playerHp: run.player_hp,
-        playerMp: run.player_mp,
-        playerCooldowns: {},
-        monsterCooldowns: {},
-        statusEffects: []
-      };
+      // 调用自动战斗函数
+      const battleResult = autoBattle(ch, monster, battleStyle);
 
-      await conn.execute('UPDATE dungeon_runs SET in_battle=true, current_battle=?, current_room=current_room+1 WHERE id=?',
-        [JSON.stringify(battleData), runId]);
+      // 更新角色HP/MP
+      await conn.execute('UPDATE characters SET hp=?, mp=? WHERE id=?',
+        [battleResult.remainingHp, battleResult.remainingMp, characterId]);
+      await conn.execute('UPDATE dungeon_runs SET player_hp=?, player_mp=?, current_room=current_room+1 WHERE id=?',
+        [battleResult.remainingHp, battleResult.remainingMp, runId]);
 
-      result.description = `⚔️ A ${monster.name} appears!`;
-      result.battle = battleData;
+      // 处理战斗结果
+      if (battleResult.result === 'victory') {
+        result.description = `⚔️ 遭遇 ${monster.name}！战斗胜利！`;
+        result.type = 'combat_victory';
+        result.battleLog = battleResult.logs;
+
+        // 发放奖励
+        const rewards = battleResult.rewards;
+        await conn.execute('UPDATE characters SET exp=exp+?, gold=gold+? WHERE id=?',
+          [rewards.exp, rewards.gold, characterId]);
+
+        result.reward = {
+          exp: rewards.exp,
+          gold: rewards.gold,
+          isCrit: rewards.isCrit
+        };
+        result.description += rewards.isCrit ? ' (暴击！)' : '';
+        result.description += `\n获得 ${rewards.exp} 经验，${rewards.gold} 金币`;
+
+        // 检查装备掉落
+        const lootRoll = Math.random();
+        const lootChance = 0.3 + (parseInt(run.dungeon_level) * 0.05) + (ch.cha - 10) * 0.02;
+        if (lootRoll < lootChance) {
+          const equipment = generateEquipment(parseInt(run.dungeon_level));
+          await conn.execute('INSERT INTO equipment (character_id, name, type, rarity, bonus_str, bonus_dex, bonus_con, bonus_int, bonus_wis, bonus_cha) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [characterId, equipment.name, equipment.type, equipment.rarity, equipment.bonus_str, equipment.bonus_dex, equipment.bonus_con, equipment.bonus_int, equipment.bonus_wis, equipment.bonus_cha]);
+
+          result.reward.equipment = equipment;
+          result.description += `\n💎 装备掉落：${equipment.name}！`;
+        }
+
+        // 检查升级
+        const newExp = ch.exp + rewards.exp;
+        if (newExp >= 100) {
+          const levelUp = Math.floor(newExp / 100);
+          const newLevel = ch.level + levelUp;
+          const hpGain = levelUp * 5;
+          const mpGain = levelUp * 3;
+
+          await conn.execute('UPDATE characters SET level=?, exp=?, max_hp=max_hp+?, max_mp=max_mp+? WHERE id=?',
+            [newLevel, newExp % 100, hpGain, mpGain, characterId]);
+
+          result.levelUp = { levels: levelUp, newLevel, hpGain, mpGain };
+          result.description += `\n\n🎉 升级了 ${levelUp} 级！达到 ${newLevel} 级！`;
+        }
+
+      } else if (battleResult.result === 'flee') {
+        result.description = `⚔️ 遭遇 ${monster.name}！成功逃跑！`;
+        result.type = 'flee';
+        result.battleLog = battleResult.logs;
+
+      } else {
+        // 战斗失败
+        await conn.execute('DELETE FROM dungeon_runs WHERE id=?', [runId]);
+        return res.json({
+          success: true,
+          type: 'defeat',
+          message: `💀 被 ${monster.name} 击败了...`,
+          battleLog: battleResult.logs,
+          remainingHp: 0
+        });
+      }
     } else if (room.type === 'treasure') {
       const gold = 10 + Math.floor(Math.random() * 20) * parseInt(run.dungeon_level);
       result.reward.gold = gold;
@@ -553,6 +859,57 @@ app.post('/api/dungeon/explore', async (req, res) => {
   } catch (e) {
     console.error('Explore room error:', e);
     res.json({ success: false, message: 'Failed to explore' });
+  } finally {
+    conn.release();
+  }
+});
+
+// ==================== 战斗设置系统 ====================
+
+// 获取战斗设置
+app.get('/api/character/:characterId/battle-settings', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const [chars] = await conn.execute('SELECT battle_style FROM characters WHERE id=?', [req.params.characterId]);
+    if (chars.length === 0) {
+      return res.json({ success: false, message: 'Character not found' });
+    }
+
+    res.json({
+      success: true,
+      battleStyle: chars[0].battle_style || 'balanced'
+    });
+  } catch (e) {
+    console.error('Get battle settings error:', e);
+    res.json({ success: false, message: 'Failed to get battle settings' });
+  } finally {
+    conn.release();
+  }
+});
+
+// 保存战斗设置
+app.post('/api/character/:characterId/battle-settings', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { battleStyle } = req.body;
+
+    // 验证战斗风格
+    const validStyles = ['aggressive', 'balanced', 'defensive'];
+    if (!validStyles.includes(battleStyle)) {
+      return res.json({ success: false, message: 'Invalid battle style' });
+    }
+
+    await conn.execute('UPDATE characters SET battle_style=? WHERE id=?',
+      [battleStyle, req.params.characterId]);
+
+    res.json({
+      success: true,
+      message: 'Battle settings updated',
+      battleStyle
+    });
+  } catch (e) {
+    console.error('Save battle settings error:', e);
+    res.json({ success: false, message: 'Failed to save battle settings' });
   } finally {
     conn.release();
   }

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战斗设置 - 土豆地城</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .settings-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .setting-group {
+            margin-bottom: 30px;
+        }
+
+        .setting-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .battle-styles {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .style-option {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .style-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .style-option.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .style-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .style-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .style-desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .stats-preview {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .save-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .save-button:hover {
+            transform: scale(1.02);
+        }
+
+        .save-button:active {
+            transform: scale(0.98);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <h1>⚔️ 战斗设置</h1>
+
+        <div class="setting-group">
+            <label class="setting-label">选择战斗风格</label>
+            <div class="battle-styles">
+                <div class="style-option" data-style="aggressive">
+                    <div class="style-icon">⚔️</div>
+                    <div class="style-name">激进</div>
+                    <div class="style-desc">高攻击 低防御</div>
+                </div>
+                <div class="style-option active" data-style="balanced">
+                    <div class="style-icon">⚖️</div>
+                    <div class="style-name">平衡</div>
+                    <div class="style-desc">攻守均衡</div>
+                </div>
+                <div class="style-option" data-style="defensive">
+                    <div class="style-icon">🛡️</div>
+                    <div class="style-name">保守</div>
+                    <div class="style-desc">高防御 会治疗</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-preview">
+            <div class="stat-row">
+                <span class="stat-label">攻击加成</span>
+                <span class="stat-value" id="attackBonus">+0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">防御加成</span>
+                <span class="stat-value" id="defenseBonus">+0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">技能使用率</span>
+                <span class="stat-value" id="skillChance">50%</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">治疗优先级</span>
+                <span class="stat-value" id="healPriority">低</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">逃跑阈值</span>
+                <span class="stat-value" id="fleeThreshold">20% HP</span>
+            </div>
+        </div>
+
+        <button class="save-button" id="saveButton">保存设置</button>
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const styleData = {
+            aggressive: {
+                attackBonus: '+2',
+                defenseBonus: '-1',
+                skillChance: '70%',
+                healPriority: '低',
+                fleeThreshold: '10% HP'
+            },
+            balanced: {
+                attackBonus: '+0',
+                defenseBonus: '+0',
+                skillChance: '50%',
+                healPriority: '中',
+                fleeThreshold: '20% HP'
+            },
+            defensive: {
+                attackBonus: '-1',
+                defenseBonus: '+2',
+                skillChance: '30%',
+                healPriority: '高',
+                fleeThreshold: '30% HP'
+            }
+        };
+
+        let currentStyle = 'balanced';
+        let characterId = null;
+
+        // 获取URL参数
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 加载战斗设置
+        async function loadBattleSettings() {
+            characterId = getUrlParameter('characterId');
+            if (!characterId) {
+                showMessage('缺少角色ID参数', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/character/${characterId}/battle-settings`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentStyle = data.battleStyle || 'balanced';
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('Failed to load battle settings:', error);
+            }
+        }
+
+        // 更新UI显示
+        function updateUI() {
+            // 更新选项卡状态
+            document.querySelectorAll('.style-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.style === currentStyle) {
+                    option.classList.add('active');
+                }
+            });
+
+            // 更新统计预览
+            const stats = styleData[currentStyle];
+            document.getElementById('attackBonus').textContent = stats.attackBonus;
+            document.getElementById('defenseBonus').textContent = stats.defenseBonus;
+            document.getElementById('skillChance').textContent = stats.skillChance;
+            document.getElementById('healPriority').textContent = stats.healPriority;
+            document.getElementById('fleeThreshold').textContent = stats.fleeThreshold;
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // 保存设置
+        async function saveSettings() {
+            if (!characterId) {
+                showMessage('缺少角色ID', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/character/${characterId}/battle-settings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ battleStyle: currentStyle })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('设置已保存！', 'success');
+                } else {
+                    showMessage(data.message || '保存失败', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                showMessage('网络错误，请重试', 'error');
+            }
+        }
+
+        // 事件监听
+        document.querySelectorAll('.style-option').forEach(option => {
+            option.addEventListener('click', () => {
+                currentStyle = option.dataset.style;
+                updateUI();
+            });
+        });
+
+        document.getElementById('saveButton').addEventListener('click', saveSettings);
+
+        // 页面加载时初始化
+        loadBattleSettings();
+    </script>
+</body>
+</html>
